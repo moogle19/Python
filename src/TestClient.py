@@ -2,7 +2,7 @@
 """
 Created on Wed Oct 24 16:04:51 2012
 
-@author: Stefan Stiene
+@author: Valentin Bruder
 """
 from BaseRobotClient import *
 import random
