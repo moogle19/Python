@@ -86,7 +86,7 @@ class GameMaster(object):
     def startGame(self):
         i = 0 # just for testing
         self.maze.updateRobotStates(self.robot_states)
-        while i < 1000000 and not self.gameFinished(): #i < 10: #
+        while i < 100000 and not self.gameFinished(): #i < 10: #
             i += 1
             #sleep(0.5)
             self.visualizer.showState()
