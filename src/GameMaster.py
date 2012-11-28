@@ -88,7 +88,7 @@ class GameMaster(object):
         self.maze.updateRobotStates(self.robot_states)
         while i < 100000 and not self.gameFinished(): #i < 10: #
             i += 1
-            #sleep(0.5)
+            sleep(0.5)
             self.visualizer.showState()
             #a = raw_input()
             print "round",i
@@ -159,7 +159,7 @@ if __name__ == "__main__":
     
     #for name in sys.argv:
     #    master.addClient(name)
-    master.addClient("TestClient")
+    #master.addClient("TestClient")
     master.addClient("TestClient")
     #master.addClient("TestClient")
     master.addClient("OurClient")

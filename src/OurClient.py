@@ -7,6 +7,7 @@ Created on Wed Nov 7 10:52:51 2012
 from BaseRobotClient import *
 import random
 
+
 class TestClient(BaseRobotClient):
     global count
     global sensor
