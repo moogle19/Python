@@ -24,37 +24,53 @@ class TestClient(BaseRobotClient):
         self.stay = 0
         self.staytime = 1
         self.bomb = 0
-
-    def getNextCommand(self, sensor_data, bumper, compass, teleported):
-        #print sensor_data, bumper
+        
+    def printSensorData(self, sensor_data, bumper, compass, teleported):
         print "compass: ", compass
         print "bomb stat: ", self.bomb
         if teleported:
             print "ups I was teleported"
         if sensor_data != None:
             print sensor_data
-            self.sensor['left'] = sensor_data['left']
-            self.sensor['right'] = sensor_data['right']
-            self.sensor['front'] = sensor_data['front']
-            self.sensor['back'] = sensor_data['back']
-            self.sensor['battery'] = sensor_data['battery']
-
-        #battery handling
-        #self.moveNextStep = self.count + 1
-        if (self.stay == 1) and (self.staytime <= 50) :
-            self.staytime += 1
-            return Command.Stay           
-        elif (self.stay == 1) and (self.staytime > 50) :
-            self.stay = 0
-            self.staytime = 0
-            self.moveNextStep = True
-            return Command.Sense
+    
+    def setSensorData(self, sensor_data):
+        self.sensor['left'] = sensor_data['left']
+        self.sensor['right'] = sensor_data['right']
+        self.sensor['front'] = sensor_data['front']
+        self.sensor['back'] = sensor_data['back']
+        self.sensor['battery'] = sensor_data['battery']
+        
+    def batteryHandler(self):
+        if (self.stay == 1):
+            if (self.staytime <= 50) :
+                self.staytime += 1
+                return Command.Stay           
+            else :
+                self.stay = 0
+                self.staytime = 0
+                self.moveNextStep = True
+                return Command.Sense
         elif self.sensor['battery'] <= 10 :
             self.stay = 1
             return Command.Stay
-        elif self.moveNextStep == False :
+        else :
             self.moveNextStep = True
             return Command.Sense
+           
+        
+    def getNextCommand(self, sensor_data, bumper, compass, teleported):
+        #print sensor_data, bumper
+        self.printSensorData(sensor_data, bumper, compass, teleported)
+        
+        if sensor_data != None :
+            self.setSensorData(sensor_data)
+            
+        #battery handling
+        #self.moveNextStep = self.count + 1
+        
+        
+        if (self.stay == 1) or (self.sensor['battery'] <= 10) or (self.moveNextStep == False) :
+            return self.batteryHandler();
         
         # bomb handling
         elif self.bomb == 1 :
