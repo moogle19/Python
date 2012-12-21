@@ -20,7 +20,7 @@ class TestClient(BaseRobotClient):
         #test teleporter  self.commands = [0,0,3, 3,0,3, 4]
         #test sensor_data self.commands = [3,4,0]   
         self.sensor = {'right': 0, 'left': 0, 'front':0, 'back': 0, 'battery': 100}     
-        self.sensorStrings = ['right', 'left', 'front', 'back']
+        self.sensorStrings = ['front', 'right', 'back', 'left']
         self.index = 0
         self.moveNextStep = False
         self.stay = 0
@@ -97,24 +97,55 @@ class TestClient(BaseRobotClient):
         else :
             self.moveNextStep = True
             return Command.Sense
+        
+    def identifyNode(self, sensor_data):
+        sensorcount = 0;
+        for x in self.sensorStrings :
+            if(sensor_data[x] == 0) :
+                sensorcount += 1
+        #crossroad        
+        if(sensorcount >= 3) :
+            return self.CROSSROAD
+        #deadend
+        elif(sensorcount <= 1) :
+            return self.DEADEND
+        
+        #maybe a turn
+        elif(sensorcount == 2) :
+            length = len(self.sensorStrings)
+            
+            for x in range(len(self.sensorStrings)) :
+                if(x == length) :
+                    if(sensor_data[self.sensorStrings[x]] == 0 and (sensor_data[self.sensorStrings[0]] == 0 or sensor_data[self.sensorStrings[x - 1]] == 0)) :
+                        return self.TURN
+                    
+                elif(x == 0) :
+                    if(sensor_data[self.sensorStrings[x]] == 0 and (sensor_data[self.sensorStrings[length - 1]] == 0 or sensor_data[self.sensorStrings[x + 1]] == 0)) :
+                        return self.TURN
+                
+                elif(sensor_data[self.sensorStrings[x]] == 0 and (sensor_data[self.sensorStrings[x + 1]] == 0 or sensor_data[self.sensorStrings[x - 1]] == 0)) :
+                    return self.TURN
+            
+        else :
+            return None
+            
       
-    def buildGraph(self, sensor_data):  
+    def fillGraph(self, sensor_data):  
         sensorcount = 0;
    
         for x in self.sensorStrings :
             if(sensor_data[x] == 0) :
                     sensorcount += 1
-        if((sensorcount >= 3 or sensorcount <= 1) and self.steps > 0) :
-            if(sensorcount >= 3) :
-                self.Graph.add_node(self.nodecount + 1, type = self.CROSSROAD)
-            elif(sensorcount <= 1) :
-                self.Graph.add_node(self.nodecount + 1, type = self.DEADEND)
+        node = self.identifyNode(sensor_data)
+        
+        if((not node == None) and self.steps > 0) :
+            self.Graph.add_node(self.nodecount + 1, type = node)
                     
             if(self.nodecount > 0) :
-                self.Graph.add_edge(self.lastnode + 1, self.nodecount + 1, weight = self.steps)
+                self.Graph.add_edge(self.lastnode + 1, self.nodecount + 1, weight = self.steps, dir = self.orientation%2)
             self.lastnode = self.nodecount
             self.nodecount += 1;
-            self.steps = 0
+            self.steps = 0 
         
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         #print sensor_data, bumper
@@ -131,7 +162,7 @@ class TestClient(BaseRobotClient):
         self.printSensorData(sensor_data, bumper, compass, teleported)
         if sensor_data != None :
             self.setSensorData(sensor_data)
-            self.buildGraph(sensor_data)
+            self.fillGraph(sensor_data)
             
             #add nodes
             
@@ -191,8 +222,8 @@ class TestClient(BaseRobotClient):
                 self.moveNextStep = False
                 return self.turnLeft()
             #elif (compass == 2.0) and (self.sensor['right'] == 0) :
-             #   self.moveNextStep = False
-              #  return self.turnRight()
+            #   self.moveNextStep = False
+            #  return self.turnRight()
             else :
                 return self.turnRight()
             
