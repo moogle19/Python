@@ -12,6 +12,9 @@ var
 sdist
 develop-eggs
 .installed.cfg
+.settings
+.project
+.pydevproject
 
 # Installer logs
 pip-log.txt
