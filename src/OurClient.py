@@ -28,7 +28,7 @@ class TestClient(BaseRobotClient):
         self.staytime = 1
         self.bomb = 0
         self.Graph = nx.Graph();
-        self.nodecount = 0
+        self.nodecount = 1
         self.steps = 0
         self.orientationset = False
         
@@ -98,6 +98,16 @@ class TestClient(BaseRobotClient):
         else :
             self.moveNextStep = True
             return Command.Sense
+    """
+        get distance between two nodes
+        @return if nodes are connected distance
+    """
+    def getNodeDistance(self, currentNode, lastNode):
+        #TODO: check if they are neighbors because if not an error occurs
+        return self.Graph[currentNode][lastNode]['weight']
+    
+    
+    
     
     '''
         identify a node as a crossroad, a deadend or a turn
@@ -146,14 +156,15 @@ class TestClient(BaseRobotClient):
         node = self.identifyNode(sensor_data)
         
         if((not node == None) and self.steps > 0) :
-            self.Graph.add_node(self.nodecount + 1, type = node)
+            self.Graph.add_node(self.nodecount, type = node)
         #TODO: avoid to add a node twice
         #TODO: if the robot goes backwards the weight of the edges isn't right because steps is counting up
             
             #add edge between nodes 
             #dir is direction which is 0(horizontal) or 1(vertical);dir is calculated from orientation which is even for up/down  and uneven for right/left  
-            if(self.nodecount > 0) :
-                self.Graph.add_edge(self.lastnode + 1, self.nodecount + 1, weight = self.steps, dir = self.orientation%2)
+            if(self.nodecount > 1) :
+                self.Graph.add_edge(self.lastnode, self.nodecount, weight = self.steps, dir = self.orientation%2)
+                print "NodeDistance: ", self.getNodeDistance(self.lastnode, self.nodecount + 1)
             self.lastnode = self.nodecount
             self.nodecount += 1;
             self.steps = 0 
