@@ -8,6 +8,7 @@ Created on Wed Nov 7 10:52:51 2012
 from BaseRobotClient import *
 import random
 import networkx as nx
+from twisted.trial.unittest import Todo
 
 
 class TestClient(BaseRobotClient):
@@ -97,7 +98,10 @@ class TestClient(BaseRobotClient):
         else :
             self.moveNextStep = True
             return Command.Sense
-        
+    
+    '''
+        identify a node as a crossroad, a deadend or a turn
+    '''    
     def identifyNode(self, sensor_data):
         sensorcount = 0;
         for x in self.sensorStrings :
@@ -114,18 +118,21 @@ class TestClient(BaseRobotClient):
         elif(sensorcount == 2) :
             length = len(self.sensorStrings)
             
+            #check if its a turn (open paths must me at a 90 degree angle)
             for x in range(len(self.sensorStrings)) :
+                # to avoid buffer overflow
                 if(x == length) :
                     if(sensor_data[self.sensorStrings[x]] == 0 and (sensor_data[self.sensorStrings[0]] == 0 or sensor_data[self.sensorStrings[x - 1]] == 0)) :
                         return self.TURN
-                    
+                # to avoid negative list access    
                 elif(x == 0) :
                     if(sensor_data[self.sensorStrings[x]] == 0 and (sensor_data[self.sensorStrings[length - 1]] == 0 or sensor_data[self.sensorStrings[x + 1]] == 0)) :
                         return self.TURN
                 
                 elif(sensor_data[self.sensorStrings[x]] == 0 and (sensor_data[self.sensorStrings[x + 1]] == 0 or sensor_data[self.sensorStrings[x - 1]] == 0)) :
                     return self.TURN
-            
+        
+        # if its not a node
         else :
             return None
             
@@ -140,7 +147,11 @@ class TestClient(BaseRobotClient):
         
         if((not node == None) and self.steps > 0) :
             self.Graph.add_node(self.nodecount + 1, type = node)
-                    
+        #TODO: avoid to add a node twice
+        #TODO: if the robot goes backwards the weight of the edges isn't right because steps is counting up
+            
+            #add edge between nodes 
+            #dir is direction which is 0(horizontal) or 1(vertical);dir is calculated from orientation which is even for up/down  and uneven for right/left  
             if(self.nodecount > 0) :
                 self.Graph.add_edge(self.lastnode + 1, self.nodecount + 1, weight = self.steps, dir = self.orientation%2)
             self.lastnode = self.nodecount
