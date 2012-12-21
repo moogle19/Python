@@ -11,14 +11,9 @@ import networkx as nx
 
 
 class TestClient(BaseRobotClient):
-    global moveNextStep
-    global sensor
-    global stay
-    global bomb
-    global Graph
-    global sensorStrings
-    global nodecount;
-    global lastnode;
+    global moveNextStep, sensor, stay, bomb, Graph, sensorStrings, nodecount, lastnode, steps, orientation, orientationset
+    #constants
+    global CROSSROAD, DEADEND, TURN, HORI, VERT, UP, RIGHT, DOWN, LEFT
     
     def __init__(self):
         super(TestClient , self).__init__()
@@ -32,8 +27,42 @@ class TestClient(BaseRobotClient):
         self.staytime = 1
         self.bomb = 0
         self.Graph = nx.Graph();
-        self.nodecount = 0;
+        self.nodecount = 0
+        self.steps = 0
+        self.orientationset = False
         
+        #CONSTANTS
+        
+        #NODE IDENTIFIER
+        self.CROSSROAD = 0
+        self.DEADEND = 1
+        self.TURN = 2
+        #EDGE DIRECTION IDENTIFIER 
+        self.VERT = 0
+        self.HORI = 1
+        #ORIENTATION IDENTIFIER
+        self.UP = 0
+        self.RIGHT = 1
+        self.DOWN = 2
+        self.LEFT = 3
+        
+        
+    def turnRight(self):
+        self.orientation += 1
+        if(self.orientation > 3) :
+            self.orientation = 0
+        return Command.RightTurn
+    
+    def turnLeft(self):
+        self.orientation -= 1
+        if(self.orientation < 0) :
+            self.orientation = 3
+        return Command.LeftTurn
+    
+    def moveForward(self):
+        self.steps += 1
+        return Command.MoveForward
+    
     def printSensorData(self, sensor_data, bumper, compass, teleported):
         print "compass: ", compass
         print "bomb stat: ", self.bomb
@@ -42,7 +71,8 @@ class TestClient(BaseRobotClient):
         if sensor_data != None:
             print sensor_data
             
-        print "Graph: ", self.Graph.nodes()
+        print "Graph: ", self.Graph.nodes(data = True)
+        print "Edges: ", self.Graph.edges(data = True)
     
     def setSensorData(self, sensor_data):
         self.sensor['left'] = sensor_data['left']
@@ -67,25 +97,44 @@ class TestClient(BaseRobotClient):
         else :
             self.moveNextStep = True
             return Command.Sense
-           
+      
+    def buildGraph(self, sensor_data):  
+        sensorcount = 0;
+   
+        for x in self.sensorStrings :
+            if(sensor_data[x] == 0) :
+                    sensorcount += 1
+        if((sensorcount >= 3 or sensorcount <= 1) and self.steps > 0) :
+            if(sensorcount >= 3) :
+                self.Graph.add_node(self.nodecount + 1, type = self.CROSSROAD)
+            elif(sensorcount <= 1) :
+                self.Graph.add_node(self.nodecount + 1, type = self.DEADEND)
+                    
+            if(self.nodecount > 0) :
+                self.Graph.add_edge(self.lastnode + 1, self.nodecount + 1, weight = self.steps)
+            self.lastnode = self.nodecount
+            self.nodecount += 1;
+            self.steps = 0
         
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         #print sensor_data, bumper
+        if(not self.orientationset) :
+            if(compass <= 1) :
+                self.orientation = self.UP
+            elif(compass <= 3) :
+                self.orientation = self.RIGHT
+            elif(compass <= 5) :
+                self.orientation = self.DOWN
+            elif(compass <= 7) :
+                self.orientation = self.LEFT
+            self.orientationset = True
         self.printSensorData(sensor_data, bumper, compass, teleported)
         if sensor_data != None :
-            sensorcount = 0;
             self.setSensorData(sensor_data)
-            for x in self.sensorStrings :
-                if(sensor_data[x] == 0) :
-                    sensorcount += 1
-            if(sensorcount >= 3) :
-                self.Graph.add_node(self.nodecount)
-                if(self.nodecount != 0) :
-                    print "NODES", self.nodecount, self.lastnode
-                    self.Graph.add_edge(lastnode, nodecount)
-                self.lastnode = self.nodecount
-                self.nodecount += 1;
-                    
+            self.buildGraph(sensor_data)
+            
+            #add nodes
+            
             
         #battery handling
         #self.moveNextStep = self.count + 1
@@ -97,28 +146,28 @@ class TestClient(BaseRobotClient):
         # bomb handling
         elif self.bomb == 1 :
             self.bomb += 1
-            return Command.RightTurn
+            return self.turnRight()
         elif self.bomb == 2 :
             self.bomb += 1
             self.moveNextStep = False
-            return Command.MoveForward
+            return self.moveForward()
         elif self.bomb == 3 :
             self.bomb += 1
             return Command.DropBomb
         elif self.bomb == 4 :
             self.bomb += 1
-            return Command.MoveForward
+            return self.moveForward()
         elif self.bomb == 5 :
             self.bomb += 1
-            return Command.RightTurn
+            return self.turnRight()
         elif self.bomb == 6 :
             self.bomb += 1
-            return Command.RightTurn
+            return self.turnRight()
 
         elif self.bomb == 7 :
             self.bomb = 0
             self.moveNextStep = False
-            return Command.MoveForward
+            return self.moveForward()
         
         #compass handling
         #
@@ -129,36 +178,37 @@ class TestClient(BaseRobotClient):
         elif (compass == 0.0) or (compass == 1.0) or (compass == 7.0) :
             if self.sensor['front'] == 0 :
                 self.moveNextStep = False
-                return Command.MoveForward
+                return self.moveForward()
             elif (compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0) :
                 self.bomb = 1
+                print "DROPING BOMB!"
                 self.moveNextStep = False
-                return Command.RightTurn
-            elif (compass == 1.0) and (self.sensor['right'] == 0) :
+                return self.turnRight()
+            elif (compass == 1.0 or compass == 2.0) and (self.sensor['right'] == 0) :
                 self.moveNextStep = False
-                return Command.RightTurn
+                return self.turnRight()
             elif (compass == 7.0) and (self.sensor['left'] == 0) :
                 self.moveNextStep = False
-                return Command.LeftTurn
-            elif (compass == 2.0) and (self.sensor['right'] == 0) :
-                self.moveNextStep = False
-                return Command.RightTurn
+                return self.turnLeft()
+            #elif (compass == 2.0) and (self.sensor['right'] == 0) :
+             #   self.moveNextStep = False
+              #  return self.turnRight()
             else :
-                return Command.RightTurn
+                return self.turnRight()
             
         elif ((compass == 2.0) or (compass == 6.0)) and (self.sensor['front'] == 0) :
                 self.moveNextStep = False
-                return Command.MoveForward
+                return self.moveForward()
             
         elif (compass == 6.0) or (compass == 5.0) :
             self.moveNextStep = False
-            return Command.LeftTurn
+            return self.turnLeft()
         elif (self.sensor['front'] == 0) :
             self.moveNextStep = False
-            return Command.MoveForward
+            return self.moveForward()
         else :
             self.moveNextStep = False
-            return Command.RightTurn
+            return self.turnRight()
         
         
         print compass
