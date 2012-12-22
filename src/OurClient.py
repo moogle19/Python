@@ -171,7 +171,8 @@ class TestClient(BaseRobotClient):
             self.Graph.add_node(self.nodecount, type = node)
  
             
-            #add edge between nodes 
+            #add edge between nodes
+            
             if(self.nodecount > 1) :
                 self.Graph.add_edge(self.lastnode, self.nodecount, weight = self.steps, dir = self.orientation, visited = False)
             self.lastnode = self.nodecount

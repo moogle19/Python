@@ -1,3 +1,3 @@
-1. Graph Nodes könnten doppelt hinzugefügt werden
-2. wenn bombe gelegt wird und roboter zurueck laeuft wird steps trotzdem hochgezaehlt. So stimmt die Entfernung zum nächsten Node nicht. Muss noch angepasst werden.
-3. abfrage vom Graph, bisher wird er nur erstellt.
+*** Graph Nodes könnten doppelt hinzugefügt werden
+*** abfrage vom Graph, bisher wird er nur erstellt.
+*** moeglicherweise ist ein gerichteter graph doch besser da sonst nicht klar wird in welche richtung die edges verlaufen. 
