@@ -114,11 +114,15 @@ class TestClient(BaseRobotClient):
         return self.Graph[currentNode][lastNode]['weight']
     
     
+    #def goBackToLastCrossroad(self):
+        
+    
     
     
     '''
         identify a node as a crossroad, a deadEnd or a turn
-    '''    
+    '''
+            
     def identifyNode(self, sensor_data, compass):
         sensorcount = 0;
         for x in self.sensorStrings :
@@ -168,9 +172,8 @@ class TestClient(BaseRobotClient):
  
             
             #add edge between nodes 
-            #dir is direction which is 0(horizontal) or 1(vertical);dir is calculated from orientation which is even for up/down  and uneven for right/left  
             if(self.nodecount > 1) :
-                self.Graph.add_edge(self.lastnode, self.nodecount, weight = self.steps, dir = self.orientation % 2)
+                self.Graph.add_edge(self.lastnode, self.nodecount, weight = self.steps, dir = self.orientation, visited = False)
             self.lastnode = self.nodecount
             self.nodecount += 1;
             self.steps = 0 
