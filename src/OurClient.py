@@ -50,18 +50,21 @@ class TestClient(BaseRobotClient):
         
     def turnRight(self):
         self.orientation += 1
+        self.sensor['battery'] -= 1
         if(self.orientation > 3) :
             self.orientation = 0
         return Command.RightTurn
     
     def turnLeft(self):
         self.orientation -= 1
+        self.sensor['battery'] -= 1
         if(self.orientation < 0) :
             self.orientation = 3
         return Command.LeftTurn
     
     def moveForward(self):
         self.steps += 1
+        self.sensor['battery'] -= 1
         return Command.MoveForward
     
     def printSensorData(self, sensor_data, bumper, compass, teleported):
@@ -103,16 +106,16 @@ class TestClient(BaseRobotClient):
         @return if nodes are connected distance
     """
     def getNodeDistance(self, currentNode, lastNode):
-        #TODO: check if they are neighbors because if not an error occurs
+        #TODO: check if the two nodes are neighbors because if not an error occurs
         return self.Graph[currentNode][lastNode]['weight']
     
     
     
     
     '''
-        identify a node as a crossroad, a deadend or a turn
+        identify a node as a crossroad, a deadEnd or a turn
     '''    
-    def identifyNode(self, sensor_data):
+    def identifyNode(self, sensor_data, compass):
         sensorcount = 0;
         for x in self.sensorStrings :
             if(sensor_data[x] == 0) :
@@ -121,7 +124,7 @@ class TestClient(BaseRobotClient):
         if(sensorcount >= 3) :
             return self.CROSSROAD
         #deadend
-        elif(sensorcount <= 1) :
+        elif(sensorcount <= 1 and not ((compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0))) :
             return self.DEADEND
         
         #maybe a turn
@@ -146,28 +149,32 @@ class TestClient(BaseRobotClient):
         else :
             return None
             
-      
-    def fillGraph(self, sensor_data):  
+    #TODO: avoid to add a node twice
+    #TODO: if the robot goes backwards the weight of the edges isn't right because steps is counting up
+    def fillGraph(self, sensor_data, compass):  
         sensorcount = 0;
    
         for x in self.sensorStrings :
             if(sensor_data[x] == 0) :
                     sensorcount += 1
-        node = self.identifyNode(sensor_data)
+        node = self.identifyNode(sensor_data, compass)
         
         if((not node == None) and self.steps > 0) :
             self.Graph.add_node(self.nodecount, type = node)
-        #TODO: avoid to add a node twice
-        #TODO: if the robot goes backwards the weight of the edges isn't right because steps is counting up
+ 
             
             #add edge between nodes 
             #dir is direction which is 0(horizontal) or 1(vertical);dir is calculated from orientation which is even for up/down  and uneven for right/left  
             if(self.nodecount > 1) :
-                self.Graph.add_edge(self.lastnode, self.nodecount, weight = self.steps, dir = self.orientation%2)
-                print "NodeDistance: ", self.getNodeDistance(self.lastnode, self.nodecount + 1)
+                self.Graph.add_edge(self.lastnode, self.nodecount, weight = self.steps, dir = self.orientation % 2)
             self.lastnode = self.nodecount
             self.nodecount += 1;
             self.steps = 0 
+            
+    def deleteLastNode(self):
+        self.nodecount -= 1
+        self.lastnode -= 1
+        self.Graph.remove_node(self.nodecount)
         
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         #print sensor_data, bumper
@@ -184,14 +191,7 @@ class TestClient(BaseRobotClient):
         self.printSensorData(sensor_data, bumper, compass, teleported)
         if sensor_data != None :
             self.setSensorData(sensor_data)
-            self.fillGraph(sensor_data)
-            
-            #add nodes
-            
-            
-        #battery handling
-        #self.moveNextStep = self.count + 1
-        
+            self.fillGraph(sensor_data, compass)      
         
         if (self.stay == 1) or (self.sensor['battery'] <= 10) or (self.moveNextStep == False) :
             return self.batteryHandler();
@@ -202,13 +202,15 @@ class TestClient(BaseRobotClient):
             return self.turnRight()
         elif self.bomb == 2 :
             self.bomb += 1
-            self.moveNextStep = False
+            self.steps -= 1 #decrease steps because you go backwards
+            #self.moveNextStep = False
             return self.moveForward()
         elif self.bomb == 3 :
             self.bomb += 1
             return Command.DropBomb
         elif self.bomb == 4 :
             self.bomb += 1
+            self.steps -= 1 #decrease steps because you go backwards
             return self.moveForward()
         elif self.bomb == 5 :
             self.bomb += 1
@@ -219,7 +221,7 @@ class TestClient(BaseRobotClient):
 
         elif self.bomb == 7 :
             self.bomb = 0
-            self.moveNextStep = False
+            #self.moveNextStep = False
             return self.moveForward()
         
         #compass handling
@@ -234,8 +236,9 @@ class TestClient(BaseRobotClient):
                 return self.moveForward()
             elif (compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0) :
                 self.bomb = 1
+                #self.deleteLastNode()
                 print "DROPING BOMB!"
-                self.moveNextStep = False
+                #self.moveNextStep = False
                 return self.turnRight()
             elif (compass == 1.0 or compass == 2.0) and (self.sensor['right'] == 0) :
                 self.moveNextStep = False
