@@ -18,17 +18,21 @@ class TestClient(BaseRobotClient):
         super(TestClient , self).__init__()
         #test teleporter  self.commands = [0,0,3, 3,0,3, 4]
         #test sensor_data self.commands = [3,4,0]   
+        
         self.sensor = {'right': 0, 'left': 0, 'front':0, 'back': 0, 'battery': 100}     
         self.sensorStrings = ['front', 'right', 'back', 'left']
         self.index = 0
-        self.moveNextStep = False
         self.stay = 0
-        self.staytime = 1
         self.bomb = 0
-        self.Graph = nx.Graph();
-        self.nodecount = 1
         self.steps = 0
+        
+        self.moveNextStep = False
         self.orientationset = False
+        
+        self.staytime = 1
+        self.nodecount = 1
+        
+        self.Graph = nx.Graph();
         
         #CONSTANTS
         
@@ -36,9 +40,11 @@ class TestClient(BaseRobotClient):
         self.CROSSROAD = 0
         self.DEADEND = 1
         self.TURN = 2
+        
         #EDGE DIRECTION IDENTIFIER 
         self.VERT = 0
         self.HORI = 1
+        
         #ORIENTATION IDENTIFIER
         self.UP = 0
         self.RIGHT = 1
