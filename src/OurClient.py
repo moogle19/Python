@@ -6,9 +6,7 @@ Created on Wed Nov 7 10:52:51 2012
 @author Valentin Bruder
 """
 from BaseRobotClient import *
-import random
 import networkx as nx
-from twisted.trial.unittest import Todo
 
 
 class TestClient(BaseRobotClient):
@@ -221,7 +219,7 @@ class TestClient(BaseRobotClient):
 
         elif self.bomb == 7 :
             self.bomb = 0
-            #self.moveNextStep = False
+            self.moveNextStep = False
             return self.moveForward()
         
         #compass handling
