@@ -192,11 +192,11 @@ class TestClient(BaseRobotClient):
             last = self.lastnode
             
         
-        self.Graph.add_node(self.nodecount, type = nodetype, path = openpath, fromNode = last)
+        self.Graph.add_node(self.nodecount, type = nodetype, openpaths = openpath, fromNode = last)
         
         #TODO: Avoid adding edge twice
         if(self.nodecount > 1) :
-            self.Graph.add_edge(self.lastnode, self.nodecount, weight = self.steps, dir = self.orientation, visited = False)
+            self.Graph.add_edge(self.lastnode, self.nodecount, length = self.steps, dir = self.orientation, visited = False)
         self.lastnode = self.nodecount
         self.nodecount += 1;
         self.steps = 0
