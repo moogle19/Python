@@ -10,7 +10,7 @@ import networkx as nx
 
 
 class TestClient(BaseRobotClient):
-    global moveNextStep, sensor, stay, bomb, Graph, sensorStrings, nodecount, lastnode, steps, orientation, orientationset, position
+    global moveNextStep, sensor, stay, bomb, Graph, sensorStrings, nodecount, lastnode, steps, orientation, orientationset, position, returnToLastNode
     #constants
     global CROSSROAD, DEADEND, TURN, HORI, VERT, UP, RIGHT, DOWN, LEFT
     
@@ -26,6 +26,7 @@ class TestClient(BaseRobotClient):
         self.bomb = 0
         self.steps = 0
         self.position = {'x': 0, 'y': 0}
+        self.returnToLastNode = False
         
         self.moveNextStep = False
         self.orientationset = False
@@ -176,6 +177,7 @@ class TestClient(BaseRobotClient):
                     sensorcount += 1
         node = self.identifyNode(sensor_data, compass)
         
+        #add node for turn, deadend or crossroad
         if((not node == None) and self.steps > 0) :
             self.Graph.add_node(self.nodecount, type = node, xcoord = self.position['x'], ycoord = self.position['y'])
  
@@ -253,9 +255,11 @@ class TestClient(BaseRobotClient):
                 return self.moveForward()
             elif (compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0) :
                 self.bomb = 1
-                #self.deleteLastNode()
                 print "DROPING BOMB!"
-                #self.moveNextStep = False
+                return self.turnRight()
+            #if deadend and goal is not in front return to last node
+            elif (not(compass == 0.0) and self.sensor['front'] != 0 and self.sensor['right'] != 0 and self.sensor['left'] != 0 ) :
+                self.returnToLastNode = True
                 return self.turnRight()
             elif (compass == 1.0 or compass == 2.0) and (self.sensor['right'] == 0) :
                 self.moveNextStep = False

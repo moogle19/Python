@@ -89,7 +89,7 @@ class GameMaster(object):
         self.maze.updateRobotStates(self.robot_states)
         while i < 1000 and not self.gameFinished(): #i < 10: #
             i += 1
-            sleep(0.5)
+            sleep(1.5)
             self.visualizer.showState()
             #a = raw_input()
             print "round",i
@@ -102,10 +102,10 @@ class GameMaster(object):
                     sensor_data["bombs"] = self.robot_states[name].bombs
                     self.robot_states[name].sense = False
                 compass = self.getCompass(self.robot_states[name])
-                try:
-                    command = robot.getNextCommand(sensor_data, self.robot_states[name].bumper, compass,self.robot_states[name].teleported)
-                except:
-                    print "Error in robot",name,"continue" 
+                #try:
+                command = robot.getNextCommand(sensor_data, self.robot_states[name].bumper, compass,self.robot_states[name].teleported)
+                #except:
+                    #print "Error in robot",name,"continue" 
                 print name, "command:", Command.names[command]
                 print "battery: ", self.robot_states[name].battery
 
@@ -165,7 +165,7 @@ if __name__ == "__main__":
     #    master.addClient(name)
     master.addClient("TestClient")
     #master.addClient("TestClient")
-    master.addClient("OurClient")
+    master.addClient("OurClient1")
     #master.addClient("TestClient")
     master.initGame()    
     master.startGame()
