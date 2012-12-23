@@ -191,8 +191,10 @@ class TestClient(BaseRobotClient):
         else :
             last = self.lastnode
             
-        
-        self.Graph.add_node(self.nodecount, type = nodetype, openpaths = openpath, fromNode = last)
+        fromPath = self.orientation - 2
+        if(fromPath < 0) :
+            fromPath += 4
+        self.Graph.add_node(self.nodecount, type = nodetype, openpaths = openpath, fromNode = last, fromPath = fromPath)
         
         #TODO: Avoid adding edge twice
         if(self.nodecount > 1) :
