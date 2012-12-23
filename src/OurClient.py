@@ -10,7 +10,7 @@ import networkx as nx
 
 
 class TestClient(BaseRobotClient):
-    global moveNextStep, sensor, stay, bomb, Graph, sensorStrings, nodecount, lastnode, steps, orientation, orientationset
+    global moveNextStep, sensor, stay, bomb, Graph, sensorStrings, nodecount, lastnode, steps, orientation, orientationset, position
     #constants
     global CROSSROAD, DEADEND, TURN, HORI, VERT, UP, RIGHT, DOWN, LEFT
     
@@ -25,6 +25,7 @@ class TestClient(BaseRobotClient):
         self.stay = 0
         self.bomb = 0
         self.steps = 0
+        self.position = {'x': 0, 'y': 0}
         
         self.moveNextStep = False
         self.orientationset = False
@@ -69,6 +70,14 @@ class TestClient(BaseRobotClient):
     def moveForward(self):
         self.steps += 1
         self.sensor['battery'] -= 1
+        if(self.orientation == self.UP) :
+            self.position['y'] += 1
+        elif(self.orientation == self.DOWN) :
+            self.position['y'] -= 1
+        elif(self.orientation == self.RIGHT) :
+            self.position['x'] += 1
+        elif(self.orientation == self.LEFT) :
+            self.position['x'] -= 1
         return Command.MoveForward
     
     def printSensorData(self, sensor_data, bumper, compass, teleported):
@@ -168,7 +177,7 @@ class TestClient(BaseRobotClient):
         node = self.identifyNode(sensor_data, compass)
         
         if((not node == None) and self.steps > 0) :
-            self.Graph.add_node(self.nodecount, type = node)
+            self.Graph.add_node(self.nodecount, type = node, xcoord = self.position['x'], ycoord = self.position['y'])
  
             
             #add edge between nodes
