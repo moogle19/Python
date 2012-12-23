@@ -117,6 +117,7 @@ class TestClient(BaseRobotClient):
             return Command.Sense
     
     def addNode(self, sensor_data, compass):
+        #TODO: Avoid adding node twice
         pathcount = 0;
         openpath = [] #list for directions which are open
                 
@@ -192,7 +193,8 @@ class TestClient(BaseRobotClient):
             
         
         self.Graph.add_node(self.nodecount, type = nodetype, path = openpath, fromNode = last)
-            
+        
+        #TODO: Avoid adding edge twice
         if(self.nodecount > 1) :
             self.Graph.add_edge(self.lastnode, self.nodecount, weight = self.steps, dir = self.orientation, visited = False)
         self.lastnode = self.nodecount
