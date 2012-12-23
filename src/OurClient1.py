@@ -139,12 +139,14 @@ class TestClient(BaseRobotClient):
                 up = self.lastnode
             elif(self.orientation == 3) :
                 right = self.lastnode  
-                          
+        
+        '''get open paths from this node with relative orientation''' 
+        #get paths for deadends                  
         if(pathcount <= 1 and not ((compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0))) :
             nodetype = self.DEADEND
             #set direction to go back
             
-        #get infos for crossroads        
+        #get open paths for crossroads        
         elif(pathcount >= 3) :
             nodetype = self.CROSSROAD
             if(self.orientation == 0) :
@@ -176,9 +178,7 @@ class TestClient(BaseRobotClient):
                 if(self.sensor['right'] == 0) :
                     up = 0
         
-                        
-        
-        
+        #get open paths for turns
         elif(pathcount == 2) :
             nodetype = self.TURN
             if(self.orientation == 0) :
@@ -211,7 +211,7 @@ class TestClient(BaseRobotClient):
                     return None         
             else :
                return None 
-
+        #if it is not a node return None
         else :
             return None     
         
