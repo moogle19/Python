@@ -5,6 +5,8 @@ Created on Wed Nov 7 10:52:51 2012
 @author: Kevin Seidel
 @author Valentin Bruder
 """
+#old client
+"""
 from BaseRobotClient import *
 import networkx as nx
 
@@ -115,10 +117,10 @@ class TestClient(BaseRobotClient):
         else :
             self.moveNextStep = True
             return Command.Sense
-    """
+    '''
         get distance between two nodes
         @return if nodes are connected distance
-    """
+    '''
     def getNodeDistance(self, currentNode, lastNode):
         #TODO: check if the two nodes are neighbors because if not an error occurs
         return self.Graph[currentNode][lastNode]['weight']
@@ -289,3 +291,4 @@ class TestClient(BaseRobotClient):
         
         
         print compass
+"""
