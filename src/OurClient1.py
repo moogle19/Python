@@ -118,30 +118,28 @@ class TestClient(BaseRobotClient):
     
     def addNode(self, sensor_data, compass):
         pathcount = 0;
+        openpath = [] #list for directions which are open
                 
-        left = -1
-        right = -1
-        up = -1
-        down = -1
-                
-        #count valid paths
+        #count valid/open paths
         for x in self.sensorStrings :
             if(sensor_data[x] == 0) :
                 pathcount += 1
-        print "PATHCOUNT: ", pathcount
-        #set lastnode    
-        if(self.nodecount > 1) :        
-            if(self.orientation == 0) :
-                down = self.lastnode
-            elif(self.orientation == 1) :
-                left = self.lastnode
-            elif(self.orientation == 2) :
-                up = self.lastnode
-            elif(self.orientation == 3) :
-                right = self.lastnode  
+                
+        #orientation is relative to the start position of the robot but will be consistent in our program
+        #
+        #   0
+        # 3 ^ 1
+        #   2
+        
+        #the path we are coming from must be free
+        if(self.orientation + 2 <= 3) :
+            openpath.append(self.orientation + 2)
+        else :
+            openpath.append(self.orientation - 2)
+        
         
         '''get open paths from this node with relative orientation''' 
-        #get paths for deadends                  
+        #only open path for deadend is the pass we are coming from               
         if(pathcount <= 1 and not ((compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0))) :
             nodetype = self.DEADEND
             #set direction to go back
@@ -149,79 +147,48 @@ class TestClient(BaseRobotClient):
         #get open paths for crossroads        
         elif(pathcount >= 3) :
             nodetype = self.CROSSROAD
-            if(self.orientation == 0) :
-                if(self.sensor['front'] == 0) :
-                    up = 0
-                if(self.sensor['left'] == 0) :
-                    left = 0
-                if(self.sensor['right'] == 0) :
-                    right = 0
-            elif(self.orientation == 1) :
-                if(self.sensor['front'] == 0) :
-                    right = 0
-                if(self.sensor['left'] == 0) :
-                    up = 0
-                if(self.sensor['right'] == 0) :
-                    down = 0
-            elif(self.orientation == 2) :
-                if(self.sensor['front'] == 0) :
-                    down = 0
-                if(self.sensor['left'] == 0) :
-                    right = 0
-                if(self.sensor['right'] == 0) :
-                    left = 0
-            elif(self.orientation == 3) :
-                if(self.sensor['front'] == 0) :
-                    left = 0
-                if(self.sensor['left'] == 0) :
-                    down = 0
-                if(self.sensor['right'] == 0) :
-                    up = 0
+            #front is our current orientation
+            if(self.sensor['front'] == 0) :
+                openpath.append(self.orientation)
+            if(self.sensor['left'] == 0) :
+                if(self.orientation - 1 < 0) :
+                    openpath.append(3)
+                else :
+                    openpath.append(self.orientation - 1)
+            if(self.sensor['right'] == 0) :
+                if(self.orientation + 1 > 3) :
+                    openpath.append(0)
+                else :
+                    openpath.append(self.orientation + 1)    
         
         #get open paths for turns
         elif(pathcount == 2) :
             nodetype = self.TURN
-            if(self.orientation == 0) :
-                if(self.sensor['left'] == 0) :
-                    left = 0
-                elif(self.sensor['right'] == 0) :
-                    right = 0
+            if(self.sensor['left'] == 0 and self.sensor['right'] != 0 and self.sensor['front'] != 0) :
+                if(self.orientation - 1 < 0) :
+                    openpath.append(3)
                 else :
-                    return None
-            elif(self.orientation == 1) :
-                if(self.sensor['left'] == 0) :
-                    up = 0
-                elif(self.sensor['right'] == 0) :
-                    down = 0
+                    openpath.append(self.orientation - 1)
+            elif(self.sensor['right'] == 0 and self.sensor['left'] != 0 and self.sensor['front'] != 0) :
+                if(self.orientation + 1 > 3) :
+                    openpath.append(0)
                 else :
-                    return None
-            elif(self.orientation == 2) :
-                if(self.sensor['left'] == 0) :
-                    right = 0
-                elif(self.sensor['right'] == 0) :
-                    left = 0
-                else :
-                   return None
-            elif(self.orientation == 3) :
-                if(self.sensor['left'] == 0) :
-                    down = 0
-                elif(self.sensor['right'] == 0) :
-                    up = 0
-                else :
-                    return None         
+                    openpath.append(self.orientation + 1)
             else :
-               return None 
+                return None
+             
         #if it is not a node return None
         else :
             return None     
         
+        #if it is a node add it
         if(self.nodecount <= 1) :
-            last = 0
+            last = None
         else :
             last = self.lastnode
             
-        openpaths = {'up': up, 'down': down, 'left': left, 'right': right}
-        self.Graph.add_node(self.nodecount, type = nodetype, path = openpaths, fromNode = last)
+        
+        self.Graph.add_node(self.nodecount, type = nodetype, path = openpath, fromNode = last)
             
         if(self.nodecount > 1) :
             self.Graph.add_edge(self.lastnode, self.nodecount, weight = self.steps, dir = self.orientation, visited = False)
