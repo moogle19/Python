@@ -10,7 +10,7 @@ import networkx as nx
 
 
 class TestClient(BaseRobotClient):
-    global moveNextStep, sensor, stay, bomb, Graph, sensorStrings, nodecount, lastnode, steps, orientation, orientationset, position, returnToLastNode
+    global moveNextStep, sensor, stay, bomb, Graph, sensorStrings, nodecount, lastnode, steps, orientation, orientationset, position, crossroadlist
     #constants
     global CROSSROAD, DEADEND, TURN, HORI, VERT, UP, RIGHT, DOWN, LEFT
     
@@ -25,14 +25,14 @@ class TestClient(BaseRobotClient):
         self.stay = 0
         self.bomb = 0
         self.steps = 0
-        self.position = {'x': 0, 'y': 0}
-        self.returnToLastNode = False
-        
+               
         self.moveNextStep = False
         self.orientationset = False
         
         self.staytime = 1
         self.nodecount = 1
+        
+        self.crossroadlist = []
         
         self.Graph = nx.Graph();
         
@@ -71,14 +71,6 @@ class TestClient(BaseRobotClient):
     def moveForward(self):
         self.steps += 1
         self.sensor['battery'] -= 1
-        if(self.orientation == self.UP) :
-            self.position['y'] += 1
-        elif(self.orientation == self.DOWN) :
-            self.position['y'] -= 1
-        elif(self.orientation == self.RIGHT) :
-            self.position['x'] += 1
-        elif(self.orientation == self.LEFT) :
-            self.position['x'] -= 1
         return Command.MoveForward
     
     def printSensorData(self, sensor_data, bumper, compass, teleported):
@@ -163,7 +155,8 @@ class TestClient(BaseRobotClient):
                 if(self.orientation + 1 > 3) :
                     openpath.append(0)
                 else :
-                    openpath.append(self.orientation + 1)    
+                    openpath.append(self.orientation + 1)  
+            self.crossroadlist.append(self.nodecount)  
         
         #get open paths for turns
         elif(pathcount == 2) :
@@ -203,9 +196,16 @@ class TestClient(BaseRobotClient):
         self.nodecount += 1;
         self.steps = 0
         return 1;
-        
-       
-       
+    
+    #returns nodelist with the shortest path to the targetnode     
+    def getWayToNode(self, targetNode):
+        return nx.dijkstra_path(self.Graph, self.lastnode, targetNode)
+    
+    #returns nodelist with the shortest path to the last crossroad
+    def getBackToLastCrossRoad(self) :
+        return self.getWayToNode(self.crossroadlist[-1])
+    #TODO: Convert list of nodes to actual moves of the robot
+    #def pathToMoves(self, path):
        
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         #print sensor_data, bumper
