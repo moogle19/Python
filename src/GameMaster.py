@@ -104,6 +104,7 @@ class GameMaster(object):
                 compass = self.getCompass(self.robot_states[name])
                 #try:
                 command = robot.getNextCommand(sensor_data, self.robot_states[name].bumper, compass,self.robot_states[name].teleported)
+                '''commentend out to see the error message'''
                 #except:
                     #print "Error in robot",name,"continue" 
                 print name, "command:", Command.names[command]
