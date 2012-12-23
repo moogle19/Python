@@ -5,6 +5,8 @@ Created on Wed Nov 7 10:52:51 2012
 @author: Kevin Seidel
 @author Valentin Bruder
 """
+#old client
+"""
 from BaseRobotClient import *
 import networkx as nx
 
@@ -115,96 +117,86 @@ class TestClient(BaseRobotClient):
         else :
             self.moveNextStep = True
             return Command.Sense
+    '''
+        get distance between two nodes
+        @return if nodes are connected distance
+    '''
+    def getNodeDistance(self, currentNode, lastNode):
+        #TODO: check if the two nodes are neighbors because if not an error occurs
+        return self.Graph[currentNode][lastNode]['weight']
     
-    def addNode(self, sensor_data, compass):
-        #TODO: Avoid adding node twice
-        pathcount = 0;
-        openpath = [] #list for directions which are open
-                
-        #count valid/open paths
+    
+    #def goBackToLastCrossroad(self):
+        
+    
+    
+    
+    '''
+        identify a node as a crossroad, a deadEnd or a turn
+    '''
+            
+    def identifyNode(self, sensor_data, compass):
+        sensorcount = 0;
         for x in self.sensorStrings :
             if(sensor_data[x] == 0) :
-                pathcount += 1
+                sensorcount += 1
+        #crossroad        
+        if(sensorcount >= 3) :
+            return self.CROSSROAD
+        #deadend
+        elif(sensorcount <= 1 and not ((compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0))) :
+            return self.DEADEND
+        
+        #maybe a turn
+        elif(sensorcount == 2) :
+            length = len(self.sensorStrings)
+            
+            #check if its a turn (open paths must me at a 90 degree angle)
+            for x in range(len(self.sensorStrings)) :
+                # to avoid buffer overflow
+                if(x == length) :
+                    if(sensor_data[self.sensorStrings[x]] == 0 and (sensor_data[self.sensorStrings[0]] == 0 or sensor_data[self.sensorStrings[x - 1]] == 0)) :
+                        return self.TURN
+                # to avoid negative list access    
+                elif(x == 0) :
+                    if(sensor_data[self.sensorStrings[x]] == 0 and (sensor_data[self.sensorStrings[length - 1]] == 0 or sensor_data[self.sensorStrings[x + 1]] == 0)) :
+                        return self.TURN
                 
-        # orientation is relative to the start position of the robot but will be consistent in our program
-        #        UP
-        #        0
-        # LEFT 3 ^ 1 RIGHT
-        #        2
-        #       DOWN
-        # because its a relative orientation, UP does not have to be the Up direction in the output, but that doesn't matter, it works!
+                elif(sensor_data[self.sensorStrings[x]] == 0 and (sensor_data[self.sensorStrings[x + 1]] == 0 or sensor_data[self.sensorStrings[x - 1]] == 0)) :
+                    return self.TURN
         
-        
-        #the path we are coming from must be free
-        if(self.orientation + 2 <= 3) :
-            openpath.append(self.orientation + 2)
+        # if its not a node
         else :
-            openpath.append(self.orientation - 2)
-        
-        
-        '''get open paths from this node with relative orientation''' 
-        #only open path for deadend is the pass we are coming from               
-        if(pathcount <= 1 and not ((compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0))) :
-            nodetype = self.DEADEND
-            #set direction to go back
+            return None
             
-        #get open paths for crossroads        
-        elif(pathcount >= 3) :
-            nodetype = self.CROSSROAD
-            #front is our current orientation
-            if(self.sensor['front'] == 0) :
-                openpath.append(self.orientation)
-            if(self.sensor['left'] == 0) :
-                if(self.orientation - 1 < 0) :
-                    openpath.append(3)
-                else :
-                    openpath.append(self.orientation - 1)
-            if(self.sensor['right'] == 0) :
-                if(self.orientation + 1 > 3) :
-                    openpath.append(0)
-                else :
-                    openpath.append(self.orientation + 1)    
+    #TODO: avoid to add a node twice
+    #TODO: if the robot goes backwards the weight of the edges isn't right because steps is counting up
+    def fillGraph(self, sensor_data, compass):  
+        sensorcount = 0;
+   
+        for x in self.sensorStrings :
+            if(sensor_data[x] == 0) :
+                    sensorcount += 1
+        node = self.identifyNode(sensor_data, compass)
         
-        #get open paths for turns
-        elif(pathcount == 2) :
-            nodetype = self.TURN
-            if(self.sensor['left'] == 0 and self.sensor['right'] != 0 and self.sensor['front'] != 0) :
-                if(self.orientation - 1 < 0) :
-                    openpath.append(3)
-                else :
-                    openpath.append(self.orientation - 1)
-            elif(self.sensor['right'] == 0 and self.sensor['left'] != 0 and self.sensor['front'] != 0) :
-                if(self.orientation + 1 > 3) :
-                    openpath.append(0)
-                else :
-                    openpath.append(self.orientation + 1)
-            else :
-                return None
-             
-        #if it is not a node return None, return is only there to stop the method. 
-        else :
-            return None     
-        
-        #if it is a node add it
-        if(self.nodecount <= 1) :
-            last = None
-        else :
-            last = self.lastnode
+        #add node for turn, deadend or crossroad
+        if((not node == None) and self.steps > 0) :
+            self.Graph.add_node(self.nodecount, type = node, xcoord = self.position['x'], ycoord = self.position['y'])
+ 
             
+            #add edge between nodes
+            
+            if(self.nodecount > 1) :
+                self.Graph.add_edge(self.lastnode, self.nodecount, weight = self.steps, dir = self.orientation, visited = False)
+            self.lastnode = self.nodecount
+            self.nodecount += 1;
+            self.steps = 0 
+            
+    def deleteLastNode(self):
+        self.nodecount -= 1
+        self.lastnode -= 1
+        self.Graph.remove_node(self.nodecount)
         
-        self.Graph.add_node(self.nodecount, type = nodetype, openpaths = openpath, fromNode = last)
-        
-        #TODO: Avoid adding edge twice
-        if(self.nodecount > 1) :
-            self.Graph.add_edge(self.lastnode, self.nodecount, length = self.steps, dir = self.orientation, visited = False)
-        self.lastnode = self.nodecount
-        self.nodecount += 1;
-        self.steps = 0
-        return 1;
-        
-       
-       
-       
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         #print sensor_data, bumper
         if(not self.orientationset) :
@@ -220,7 +212,7 @@ class TestClient(BaseRobotClient):
         self.printSensorData(sensor_data, bumper, compass, teleported)
         if sensor_data != None :
             self.setSensorData(sensor_data)
-            self.addNode(sensor_data, compass)
+            self.fillGraph(sensor_data, compass)      
         
         if (self.stay == 1) or (self.sensor['battery'] <= 10) or (self.moveNextStep == False) :
             return self.batteryHandler();
@@ -299,3 +291,4 @@ class TestClient(BaseRobotClient):
         
         
         print compass
+"""

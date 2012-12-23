@@ -165,7 +165,7 @@ if __name__ == "__main__":
     #    master.addClient(name)
     master.addClient("TestClient")
     #master.addClient("TestClient")
-    master.addClient("OurClient1")
+    master.addClient("OurClient")
     #master.addClient("TestClient")
     master.initGame()    
     master.startGame()
