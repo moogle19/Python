@@ -125,11 +125,14 @@ class TestClient(BaseRobotClient):
             if(sensor_data[x] == 0) :
                 pathcount += 1
                 
-        #orientation is relative to the start position of the robot but will be consistent in our program
-        #
-        #   0
-        # 3 ^ 1
-        #   2
+        # orientation is relative to the start position of the robot but will be consistent in our program
+        #        UP
+        #        0
+        # LEFT 3 ^ 1 RIGHT
+        #        2
+        #       DOWN
+        # because its a relative orientation, UP does not have to be the Up direction in the output, but that doesn't matter, it works!
+        
         
         #the path we are coming from must be free
         if(self.orientation + 2 <= 3) :
@@ -177,7 +180,7 @@ class TestClient(BaseRobotClient):
             else :
                 return None
              
-        #if it is not a node return None
+        #if it is not a node return None, return is only there to stop the method. 
         else :
             return None     
         
@@ -215,8 +218,7 @@ class TestClient(BaseRobotClient):
         self.printSensorData(sensor_data, bumper, compass, teleported)
         if sensor_data != None :
             self.setSensorData(sensor_data)
-            if(self.addNode(sensor_data, compass)) :
-                print "Good"
+            self.addNode(sensor_data, compass)
         
         if (self.stay == 1) or (self.sensor['battery'] <= 10) or (self.moveNextStep == False) :
             return self.batteryHandler();
