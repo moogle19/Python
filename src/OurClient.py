@@ -218,7 +218,10 @@ class TestClient(BaseRobotClient):
             moveList.append([direction, distance])
             currentNode = targetNode
         return moveList
-       
+    
+    
+    #TODO: method which follows path back to last crossroad and set edge to visited
+    
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         #print sensor_data, bumper
         if(not self.orientationset) :
@@ -280,7 +283,6 @@ class TestClient(BaseRobotClient):
             elif (compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0) :
                 self.bomb = 1
                 print "DROPING BOMB!"
-                print self.pathToMoves(self.getBackToLastCrossRoad())
                 return self.turnRight()
             #if deadend and goal is not in front return to last node
             elif (not(compass == 0.0) and self.sensor['front'] != 0 and self.sensor['right'] != 0 and self.sensor['left'] != 0 ) :
