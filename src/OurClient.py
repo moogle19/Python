@@ -204,8 +204,20 @@ class TestClient(BaseRobotClient):
     #returns nodelist with the shortest path to the last crossroad
     def getBackToLastCrossRoad(self) :
         return self.getWayToNode(self.crossroadlist[-1])
-    #TODO: Convert list of nodes to actual moves of the robot
-    #def pathToMoves(self, path):
+    
+    #returns the moves to get back to given node
+    #return format [[direction, length], [direction, length] ... ]
+    def pathToMoves(self, p) :
+        path = list(p)
+        moveList = []
+        currentNode = path.pop()
+        while(len(path) > 0) :
+            targetNode = path.pop()
+            direction = self.Graph.node[currentNode]['fromPath']
+            distance = self.Graph.edge[currentNode][targetNode]['length']
+            moveList.append([direction, distance])
+            currentNode = targetNode
+        return moveList
        
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         #print sensor_data, bumper
@@ -268,6 +280,7 @@ class TestClient(BaseRobotClient):
             elif (compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0) :
                 self.bomb = 1
                 print "DROPING BOMB!"
+                print self.pathToMoves(self.getBackToLastCrossRoad())
                 return self.turnRight()
             #if deadend and goal is not in front return to last node
             elif (not(compass == 0.0) and self.sensor['front'] != 0 and self.sensor['right'] != 0 and self.sensor['left'] != 0 ) :
