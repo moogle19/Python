@@ -127,7 +127,7 @@ class TestClient(BaseRobotClient):
         # because its a relative orientation, UP does not have to be the Up direction in the output, but that doesn't matter, it works!
         
         
-        #the path we are coming from must be free
+        #assumption: the path we are coming from must be free
         if(self.orientation + 2 <= 3) :
             openpath.append(self.orientation + 2)
         else :
@@ -135,7 +135,7 @@ class TestClient(BaseRobotClient):
         
         
         '''get open paths from this node with relative orientation''' 
-        #only open path for deadend is the pass we are coming from               
+        #the only open path for a Deadend is the pass we are coming from               
         if(pathcount <= 1 and not ((compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0))) :
             nodetype = self.DEADEND
             #set direction to go back
@@ -193,9 +193,9 @@ class TestClient(BaseRobotClient):
         if(self.nodecount > 1) :
             self.Graph.add_edge(self.lastnode, self.nodecount, length = self.steps, dir = self.orientation, visited = False)
         self.lastnode = self.nodecount
-        self.nodecount += 1;
+        self.nodecount += 1
         self.steps = 0
-        return 1;
+        return 1
     
     #returns nodelist with the shortest path to the targetnode     
     def getWayToNode(self, targetNode):
@@ -221,6 +221,7 @@ class TestClient(BaseRobotClient):
     
     
     #TODO: method which follows path back to last crossroad and set edge to visited
+    '''def makeMoves(self, moveList):'''
     
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         #print sensor_data, bumper
@@ -242,6 +243,7 @@ class TestClient(BaseRobotClient):
         if (self.stay == 1) or (self.sensor['battery'] <= 10) or (self.moveNextStep == False) :
             return self.batteryHandler();
         
+        #TODO: Outsource bomb handling into own method
         # bomb handling
         elif self.bomb == 1 :
             self.bomb += 1
