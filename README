@@ -1,0 +1,2 @@
+To make the program work you need to install networkx with following command:
+	easy_install networkx
