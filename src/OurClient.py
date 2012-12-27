@@ -10,7 +10,7 @@ import networkx as nx
 
 
 class TestClient(BaseRobotClient):
-    global moveNextStep, sensor, stay, bomb, Graph, sensorStrings, nodecount, lastnode, steps, orientation, orientationset, position, crossroadlist, commandList
+    global moveNextStep, sensor, stay, bomb, Graph, sensorStrings, nodecount, lastnode, steps, orientation, orientationset, position, crossroadlist, commandList, bombsDropped
     #constants
     global CROSSROAD, DEADEND, TURN, HORI, VERT, UP, RIGHT, DOWN, LEFT
     
@@ -25,6 +25,7 @@ class TestClient(BaseRobotClient):
         self.stay = 0
         self.bomb = 0
         self.steps = 0
+        self.bombsDropped = 0
                
         self.moveNextStep = False
         self.orientationset = False
@@ -139,7 +140,7 @@ class TestClient(BaseRobotClient):
         
         '''get open paths from this node with relative orientation''' 
         #the only open path for a Deadend is the pass we are coming from               
-        if(pathcount <= 1 and not ((compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0))) :
+        if(pathcount <= 1 and not ((compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0)) and self.bombsDropped < 3) :
             nodetype = self.DEADEND
             #set direction to go back
             
@@ -225,6 +226,9 @@ class TestClient(BaseRobotClient):
     
     #TODO: method which follows path back to last crossroad and set edge to visited
     #TODO: Method to perform Commands
+    '''
+        returns list with commands in reverse order to handle it better with List.pop()
+    '''
     def addMovesToCommandList(self, moveList):
         cList = []
         for list in moveList :
@@ -239,7 +243,16 @@ class TestClient(BaseRobotClient):
                     direction -= 1
             for x in range(0, distance):
                 cList.append('Forward')
-        return cList
+        return cList.reverse()
+    
+    def doCommand(self, command):
+        if(command == 'Left'):
+            self.turnLeft()
+        elif(command == 'Right'):
+            self.turnRight()
+        elif(command == 'Forward'):
+            self.moveForward()
+    
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         #print sensor_data, bumper
         if(not self.orientationset) :
@@ -259,6 +272,9 @@ class TestClient(BaseRobotClient):
         
         if (self.stay == 1) or (self.sensor['battery'] <= 10) or (self.moveNextStep == False) :
             return self.batteryHandler();
+        
+        elif self.commandList :
+            self.doCommand(self.commandList.pop())
         
         #TODO: Outsource bomb handling into own method
         # bomb handling
@@ -301,6 +317,7 @@ class TestClient(BaseRobotClient):
                 return self.moveForward()
             elif (compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0) :
                 self.bomb = 1
+                self.bombsDropped += 1
                 print "DROPING BOMB!"
                 return self.turnRight()
             #if deadend and goal is not in front return to last node
