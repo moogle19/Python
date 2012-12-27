@@ -10,7 +10,7 @@ import networkx as nx
 
 
 class TestClient(BaseRobotClient):
-    global moveNextStep, sensor, stay, bomb, Graph, sensorStrings, nodecount, lastnode, steps, orientation, orientationset, position, crossroadlist
+    global moveNextStep, sensor, stay, bomb, Graph, sensorStrings, nodecount, lastnode, steps, orientation, orientationset, position, crossroadlist, commandList
     #constants
     global CROSSROAD, DEADEND, TURN, HORI, VERT, UP, RIGHT, DOWN, LEFT
     
@@ -52,6 +52,9 @@ class TestClient(BaseRobotClient):
         self.RIGHT = 1
         self.DOWN = 2
         self.LEFT = 3
+        
+        #List for moves to do
+        self.commandList = []
         
         
     def turnRight(self):
@@ -221,8 +224,22 @@ class TestClient(BaseRobotClient):
     
     
     #TODO: method which follows path back to last crossroad and set edge to visited
-    '''def makeMoves(self, moveList):'''
-    
+    #TODO: Method to perform Commands
+    def addMovesToCommandList(self, moveList):
+        cList = []
+        for list in moveList :
+            direction = list[0]
+            distance = list[1]
+            if(direction != self.orientation) :
+                while(direction < self.orientation):
+                    cList.append('Left')
+                    direction += 1
+                while(direction > self.orientation):
+                    cList.append('Right')
+                    direction -= 1
+            for x in range(0, distance):
+                cList.append('Forward')
+        return cList
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         #print sensor_data, bumper
         if(not self.orientationset) :
