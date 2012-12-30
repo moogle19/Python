@@ -10,7 +10,7 @@ import networkx as nx
 
 
 class TestClient(BaseRobotClient):
-    global moveNextStep, sensor, stay, bomb, Graph, sensorStrings, nodecount, lastnode, steps, orientation, orientationset, position, crossroadlist, commandList, bombsDropped
+    global moveNextStep, sensor, stay, bomb, Graph, sensorStrings, nodecount, lastnode, steps, orientation, orientationset, position, crossroadlist, commandList, bombsDropped, doCommands
     #constants
     global CROSSROAD, DEADEND, TURN, HORI, VERT, UP, RIGHT, DOWN, LEFT
     
@@ -29,6 +29,7 @@ class TestClient(BaseRobotClient):
                
         self.moveNextStep = False
         self.orientationset = False
+        self.doCommands = False
         
         self.staytime = 1
         self.nodecount = 1
@@ -217,7 +218,7 @@ class TestClient(BaseRobotClient):
         currentNode = path.pop()
         while(len(path) > 0) :
             targetNode = path.pop()
-            direction = self.Graph.node[currentNode]['fromPath']
+            direction = self.Graph.node[targetNode]['fromPath']
             distance = self.Graph.edge[currentNode][targetNode]['length']
             moveList.append([direction, distance])
             currentNode = targetNode
@@ -231,27 +232,30 @@ class TestClient(BaseRobotClient):
     '''
     def addMovesToCommandList(self, moveList):
         cList = []
+        cList.append('Right')
         for list in moveList :
             direction = list[0]
             distance = list[1]
             if(direction != self.orientation) :
                 while(direction < self.orientation):
-                    cList.append('Left')
+                    cList.append('Right')
                     direction += 1
                 while(direction > self.orientation):
-                    cList.append('Right')
+                    cList.append('Left')
                     direction -= 1
             for x in range(0, distance):
                 cList.append('Forward')
-        return cList.reverse()
+        cList.reverse()
+        return cList
     
     def doCommand(self, command):
+        print command
         if(command == 'Left'):
-            self.turnLeft()
+            return self.turnLeft()
         elif(command == 'Right'):
-            self.turnRight()
+            return self.turnRight()
         elif(command == 'Forward'):
-            self.moveForward()
+            return self.moveForward()
     
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         #print sensor_data, bumper
@@ -273,8 +277,8 @@ class TestClient(BaseRobotClient):
         if (self.stay == 1) or (self.sensor['battery'] <= 10) or (self.moveNextStep == False) :
             return self.batteryHandler();
         
-        elif self.commandList :
-            self.doCommand(self.commandList.pop())
+        elif self.commandList and self.doCommands:
+            return self.doCommand(self.commandList.pop())
         
         #TODO: Outsource bomb handling into own method
         # bomb handling
@@ -305,13 +309,17 @@ class TestClient(BaseRobotClient):
             self.moveNextStep = False
             return self.moveForward()
         
+        elif ((compass == 2.0) or (compass == 6.0)) and (self.sensor['front'] == 0) :
+                self.moveNextStep = False
+                return self.moveForward()
+        
         #compass handling
         #
         # 7 0 1
         # 6 x 2
         # 5 4 3
         #
-        elif (compass == 0.0) or (compass == 1.0) or (compass == 7.0) :
+        elif (compass == 0.0) or (compass == 1.0) or compass == 2.0 or (compass == 7.0) :
             if self.sensor['front'] == 0 :
                 self.moveNextStep = False
                 return self.moveForward()
@@ -333,22 +341,22 @@ class TestClient(BaseRobotClient):
             #elif (compass == 2.0) and (self.sensor['right'] == 0) :
             #   self.moveNextStep = False
             #  return self.turnRight()
-            else :
-                return self.turnRight()
+            #else :
+            #    return self.turnRight()
             
-        elif ((compass == 2.0) or (compass == 6.0)) and (self.sensor['front'] == 0) :
-                self.moveNextStep = False
-                return self.moveForward()
+        
             
-        elif (compass == 6.0) or (compass == 5.0) :
-            self.moveNextStep = False
-            return self.turnLeft()
+        #elif (compass == 6.0) or (compass == 5.0) :
+        #    self.moveNextStep = False
+        #    return self.turnLeft()
         elif (self.sensor['front'] == 0) :
             self.moveNextStep = False
             return self.moveForward()
         else :
-            self.moveNextStep = False
-            return self.turnRight()
+            self.commandList.extend(self.addMovesToCommandList(self.pathToMoves(self.getBackToLastCrossRoad())))
+            self.doCommands = True
+            #print self.doCommand(self.commandList.pop())
+            return self.doCommand(self.commandList.pop())
         
         
         print compass
