@@ -232,7 +232,6 @@ class TestClient(BaseRobotClient):
     '''
     def addMovesToCommandList(self, moveList):
         cList = []
-        cList.append('Right')
         for list in moveList :
             direction = list[0]
             distance = list[1]
@@ -245,7 +244,8 @@ class TestClient(BaseRobotClient):
                     direction -= 1
             for x in range(0, distance):
                 cList.append('Forward')
-        cList.reverse()
+        cList.append('Right')
+        #cList.reverse()
         return cList
     
     def doCommand(self, command):
@@ -278,6 +278,7 @@ class TestClient(BaseRobotClient):
             return self.batteryHandler();
         
         elif self.commandList and self.doCommands:
+            print self.commandList
             return self.doCommand(self.commandList.pop())
         
         #TODO: Outsource bomb handling into own method
