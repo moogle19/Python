@@ -1,3 +1,4 @@
 *** Graph Nodes und Edges könnten doppelt hinzugefügt werden
 *** abfrage vom Graph, bisher wird er nur erstellt.
 *** Navigation durch den graphen. zb. zurückgehen zur letzten kreuzung und path als ungültig markieren.
+*** Loops in Pfaden finden und als solche hinzufügen
