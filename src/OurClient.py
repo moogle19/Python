@@ -58,7 +58,20 @@ class TestClient(BaseRobotClient):
         #List for moves to do
         self.commandList = []
         
+    
+    def bombDrop(self):
+        print "DROPING BOMB!"
+        commands = ['Right', 'Forward', 'DropBomb', 'Forward', 'Right', 'Right', 'Forward', 'Forward']
+        commands.reverse()
+        self.commandList = commands
+        self.doCommands = True
         
+        return self.turnRight() 
+    
+    def dropBomb(self):
+        self.bombsDropped += 1
+        return Command.DropBomb
+            
     def turnRight(self):
         self.orientation += 1
         self.sensor['battery'] -= 1
@@ -255,6 +268,8 @@ class TestClient(BaseRobotClient):
             return self.turnRight()
         elif(command == 'Forward'):
             return self.moveForward()
+        elif(command == 'DropBomb'):
+            return self.dropBomb()
     
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         #print sensor_data, bumper
@@ -282,34 +297,6 @@ class TestClient(BaseRobotClient):
             self.doCommands = False
             return Command.Sense
         
-        #TODO: Outsource bomb handling into own method
-        # bomb handling
-        elif self.bomb == 1 :
-            self.bomb += 1
-            return self.turnRight()
-        elif self.bomb == 2 :
-            self.bomb += 1
-            self.steps -= 1 #decrease steps because you go backwards
-            #self.moveNextStep = False
-            return self.moveForward()
-        elif self.bomb == 3 :
-            self.bomb += 1
-            return Command.DropBomb
-        elif self.bomb == 4 :
-            self.bomb += 1
-            self.steps -= 1 #decrease steps because you go backwards
-            return self.moveForward()
-        elif self.bomb == 5 :
-            self.bomb += 1
-            return self.turnRight()
-        elif self.bomb == 6 :
-            self.bomb += 1
-            return self.turnRight()
-
-        elif self.bomb == 7 :
-            self.bomb = 0
-            self.moveNextStep = False
-            return self.moveForward()
         
         elif ((compass == 2.0) or (compass == 6.0)) and (self.sensor['front'] == 0) :
                 self.moveNextStep = False
@@ -326,10 +313,7 @@ class TestClient(BaseRobotClient):
                 self.moveNextStep = False
                 return self.moveForward()
             elif (compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0) :
-                self.bomb = 1
-                self.bombsDropped += 1
-                print "DROPING BOMB!"
-                return self.turnRight()
+                return self.bombDrop()
             #if deadend and goal is not in front return to last node
             elif (not(compass == 0.0) and self.sensor['front'] != 0 and self.sensor['right'] != 0 and self.sensor['left'] != 0 ) :
                 self.returnToLastNode = True
