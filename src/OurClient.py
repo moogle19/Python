@@ -10,7 +10,7 @@ import networkx as nx
 
 
 class TestClient(BaseRobotClient):
-    global moveNextStep, sensor, stay, bomb, Graph, sensorStrings, nodecount, lastnode, steps, orientation, orientationset, position, crossroadlist, commandList, bombsDropped, doCommands
+    global moveNextStep, sensor, stay, bomb, Graph, sensorStrings, nodecount, lastnode, steps, orientation, orientationset, crossroadlist, commandList, bombsDropped, doCommands, pos
     #constants
     global CROSSROAD, DEADEND, TURN, HORI, VERT, UP, RIGHT, DOWN, LEFT
     
@@ -26,6 +26,7 @@ class TestClient(BaseRobotClient):
         self.bomb = 0
         self.steps = 0
         self.bombsDropped = 0
+        self.pos = {'x': 0, 'y': 0}
                
         self.moveNextStep = False
         self.orientationset = False
@@ -76,7 +77,19 @@ class TestClient(BaseRobotClient):
     def moveForward(self):
         self.steps += 1
         self.sensor['battery'] -= 1
+        if(self.orientation == 0):
+            self.pos['x'] += 1
+        elif(self.orientation == 1):
+            self.pos['y'] += 1
+        elif(self.orientation == 2):
+            self.pos['x'] -= 1
+        elif(self.orientation == 3):
+            self.pos['y'] -= 1
         return Command.MoveForward
+    
+    def stay(self):
+        self.sensor['battery'] += 1
+        return Command.Stay
     
     def printSensorData(self, sensor_data, bumper, compass, teleported):
         print "compass: ", compass
@@ -114,6 +127,7 @@ class TestClient(BaseRobotClient):
             return Command.Sense
     
     def addNode(self, sensor_data, compass):
+        #TODO: add paths from nodes A to B and B to A
         #TODO: Avoid adding node twice
         pathcount = 0;
         openpath = [] #list for directions which are open
@@ -204,7 +218,7 @@ class TestClient(BaseRobotClient):
     
     #returns nodelist with the shortest path to the targetnode     
     def getWayToNode(self, targetNode):
-        return nx.dijkstra_path(self.Graph, self.lastnode, targetNode)
+        return nx.dijkstra_path(self.Graph, self.lastnode, targetNode, 'length')
     
     #returns nodelist with the shortest path to the last crossroad
     def getBackToLastCrossRoad(self) :
@@ -236,37 +250,33 @@ class TestClient(BaseRobotClient):
             direction = list[0]
             distance = list[1]
             if(direction != self.orientation) :
-                while(direction < self.orientation):
-                    cList.append('Right')
-                    direction += 1
+                print "Direction: ", direction, " orientation: ", self.orientation
                 while(direction > self.orientation):
-                    cList.append('Left')
+                    cList.append('Right')
                     direction -= 1
+                while(direction < self.orientation):
+                    cList.append('Left')
+                    direction += 1
             for x in range(0, distance):
                 cList.append('Forward')
         cList.append('Right')
         return cList
     
     def doCommand(self, command):
-        print command
+        print command        
         if(command == 'Left'):
             return self.turnLeft()
         elif(command == 'Right'):
             return self.turnRight()
         elif(command == 'Forward'):
             return self.moveForward()
+        elif(command == 'Stay'):
+            return self.stay()
     
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         #print sensor_data, bumper
         if(not self.orientationset) :
-            if(compass <= 1) :
-                self.orientation = self.UP
-            elif(compass <= 3) :
-                self.orientation = self.RIGHT
-            elif(compass <= 5) :
-                self.orientation = self.DOWN
-            elif(compass <= 7) :
-                self.orientation = self.LEFT
+            self.orientation = self.UP
             self.orientationset = True
         self.printSensorData(sensor_data, bumper, compass, teleported)
         if sensor_data != None :
@@ -283,6 +293,7 @@ class TestClient(BaseRobotClient):
             return Command.Sense
         
         #TODO: Outsource bomb handling into own method
+        #TODO: relative to graph (2 steps back)
         # bomb handling
         elif self.bomb == 1 :
             self.bomb += 1
@@ -325,7 +336,7 @@ class TestClient(BaseRobotClient):
             if self.sensor['front'] == 0 :
                 self.moveNextStep = False
                 return self.moveForward()
-            elif (compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0) :
+            elif (compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0) and (self.bombsDropped < 3):
                 self.bomb = 1
                 self.bombsDropped += 1
                 print "DROPING BOMB!"
@@ -357,7 +368,10 @@ class TestClient(BaseRobotClient):
         else :
             self.commandList.extend(self.addMovesToCommandList(self.pathToMoves(self.getBackToLastCrossRoad())))
             self.doCommands = True
+            print "CommandList: ", self.commandList
             #print self.doCommand(self.commandList.pop())
+            if self.sensor['battery'] < len(self.commandList) :
+                self.commandList.append('Stay')
             return self.doCommand(self.commandList.pop())
         
         
