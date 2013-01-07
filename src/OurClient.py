@@ -245,7 +245,6 @@ class TestClient(BaseRobotClient):
             for x in range(0, distance):
                 cList.append('Forward')
         cList.append('Right')
-        #cList.reverse()
         return cList
     
     def doCommand(self, command):
@@ -278,8 +277,10 @@ class TestClient(BaseRobotClient):
             return self.batteryHandler();
         
         elif self.commandList and self.doCommands:
-            print self.commandList
             return self.doCommand(self.commandList.pop())
+        elif self.doCommands:
+            self.doCommands = False
+            return Command.Sense
         
         #TODO: Outsource bomb handling into own method
         # bomb handling
