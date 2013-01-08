@@ -230,7 +230,7 @@ class TestClient(BaseRobotClient):
             if(n[1]['position'] == self.pos) :
                 nodeAlreadyAdded = True
                 currentNode = n[0]
-                #n[1]['openpaths'].remove((self.orientation + 2) % 4)
+                n[1]['openpaths'].remove((self.orientation + 2) % 4)
         if (not(nodeAlreadyAdded)) :
             self.Graph.add_node(self.nodecount, type = nodetype, openpaths = openpath, fromNode = last, fromPath = fromPath, position = dict(self.pos))
             
@@ -355,7 +355,24 @@ class TestClient(BaseRobotClient):
         
         elif(currentType == self.CROSSROAD) :
             self.moveNextStep = False
-            return self.moveForward()
+            open = self.Graph.node[self.lastnode]['openpaths']
+            
+            if(len(open) > 1) :
+                if(compass <= 1.0 or compass == 7.0) :
+                    if(self.orientation in open) :
+                        return self.moveForward()
+                if(compass <= 7.0 and compass >= 5.0) :
+                    if(((self.orientation - 1) & 3) in open) :
+                        return self.turnLeft()
+                if(compass >= 1.0 and compass <= 3.0) :
+                    if(((self.orientation + 1) & 3) in open) :
+                        return self.turnRight()
+                if(self.orientation in open) :
+                    return self.moveForward()
+            
+            
+            return self.turnRight()
+            
         
         #DEADEND Handling
         elif(currentType == self.DEADEND) :
