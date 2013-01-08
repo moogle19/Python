@@ -10,7 +10,7 @@ import networkx as nx
 
 
 class TestClient(BaseRobotClient):
-    global moveNextStep, sensor, stayNextStep, bomb, Graph, sensorStrings, nodecount, lastnode, steps, orientation, orientationset, crossroadlist, commandList, bombsDropped, doCommands, pos
+    global moveNextStep, sensor, stayNextStep, bomb, Graph, sensorStrings, nodecount, lastnode, steps, orientation, orientationset, crossroadlist, commandList, bombsDropped, pos
     #constants
     global CROSSROAD, DEADEND, TURN, HORI, VERT, UP, RIGHT, DOWN, LEFT
     
@@ -27,10 +27,10 @@ class TestClient(BaseRobotClient):
         self.steps = 0
         self.bombsDropped = 0
         self.pos = {'x': 0, 'y': 0}
+        self.lastnode = 0
                
         self.moveNextStep = False
         self.orientationset = False
-        self.doCommands = False
         
         self.staytime = 1
         self.nodecount = 1
@@ -61,13 +61,13 @@ class TestClient(BaseRobotClient):
         #List for moves to do
         self.commandList = []
         
+        
     #TODO: relative to graph (2 steps back)
     def bombDrop(self):
         print "DROPPING BOMB!"
-        commands = ['Right', 'Forward', 'DropBomb', 'Forward', 'Right', 'Right', 'Forward', 'Forward']
+        commands = ['Right', 'Forward', 'DropBomb', 'Forward', 'Right', 'Right', 'Forward', 'Forward', 'Sense']
         commands.reverse()
         self.commandList = commands
-        self.doCommands = True
         
         return self.turnRight() 
     
@@ -190,7 +190,6 @@ class TestClient(BaseRobotClient):
                     openpath.append(0)
                 else :
                     openpath.append(self.orientation + 1)  
-            self.crossroadlist.append(self.nodecount)  
         
         #get open paths for turns
         elif(pathcount == 2) :
@@ -228,7 +227,7 @@ class TestClient(BaseRobotClient):
             if(n[1]['position'] == self.pos) :
                 nodeAlreadyAdded = True
                 currentNode = n[0]
-                
+                #n[1]['openpaths'].remove((self.orientation + 2) % 4)
         if (not(nodeAlreadyAdded)) :
             self.Graph.add_node(self.nodecount, type = nodetype, openpaths = openpath, fromNode = last, fromPath = fromPath, position = dict(self.pos))
             
@@ -247,12 +246,14 @@ class TestClient(BaseRobotClient):
         
         
         if(not(nodeAlreadyAdded)) :
+            if(nodetype == self.CROSSROAD) :
+                self.crossroadlist.append(self.nodecount)  
+
             self.lastnode = self.nodecount
             self.nodecount += 1
         else :
             self.lastnode = currentNode
         self.steps = 0
-        return 1
     
     #returns nodelist with the shortest path to the targetnode     
     def getWayToNode(self, targetNode):
@@ -307,7 +308,6 @@ class TestClient(BaseRobotClient):
                     relativedirection += 1
                 for x in range(0, distance):
                     cList.append('Forward')
-            
         cList.reverse()
         return cList
     
@@ -323,22 +323,26 @@ class TestClient(BaseRobotClient):
             return self.dropBomb()
         elif(command == 'Stay'):
             return self.stayNextStep()
+        elif(command == 'Sense'):
+            return Command.Sense
     
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
+        print "CommandList: ", self.commandList
         #print sensor_data, bumper
         self.printSensorData(sensor_data, bumper, compass, teleported)
+        #set own sensor data
         if sensor_data != None :
             self.setSensorData(sensor_data)
             self.addNode(sensor_data, compass)
         
+        #handle staying for battery recharging
         if (self.stayNextStep == 1) or (self.sensor['battery'] <= 10) or (self.moveNextStep == False) :
             return self.batteryHandler();
         
-        elif self.commandList and self.doCommands:
+        
+        elif self.commandList :
             return self.doCommand(self.commandList.pop())
-        elif self.doCommands:
-            self.doCommands = False
-            return Command.Sense
+        
         
         elif ((compass == 2.0) or (compass == 6.0)) and (self.sensor['front'] == 0) :
                 self.moveNextStep = False
@@ -361,7 +365,6 @@ class TestClient(BaseRobotClient):
             #if deadend and goal is not in front return to last node
             elif (not(compass == 0.0) and self.sensor['front'] != 0 and self.sensor['right'] != 0 and self.sensor['left'] != 0 ) :
                 self.commandList.extend(self.addMovesToCommandList(self.pathToMoves(self.getBackToLastCrossRoad())))
-                self.doCommands = True
                 #print "CommandList: ", self.commandList
                 #print self.doCommand(self.commandList.pop())
                 if self.sensor['battery'] < len(self.commandList) :
@@ -385,9 +388,10 @@ class TestClient(BaseRobotClient):
         #elif (compass == 6.0) or (compass == 5.0) :
         #    self.moveNextStep = False
         #    return self.turnLeft()
-        elif (compass <= 5.0 and compass >= 3.0) :
+        elif (compass >= 3.0 and compass <= 5.0) :
             self.moveNextStep = False
             return self.turnRight()
+        
         elif (self.sensor['front'] == 0) :
             self.moveNextStep = False
             return self.moveForward()
