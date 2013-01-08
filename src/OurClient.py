@@ -56,6 +56,8 @@ class TestClient(BaseRobotClient):
         self.DOWN = 2
         self.LEFT = 3
         
+        self.orientation = self.UP
+        
         #List for moves to do
         self.commandList = []
         
@@ -324,9 +326,6 @@ class TestClient(BaseRobotClient):
     
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         #print sensor_data, bumper
-        if(not self.orientationset) :
-            self.orientation = self.UP
-            self.orientationset = True
         self.printSensorData(sensor_data, bumper, compass, teleported)
         if sensor_data != None :
             self.setSensorData(sensor_data)
@@ -386,6 +385,9 @@ class TestClient(BaseRobotClient):
         #elif (compass == 6.0) or (compass == 5.0) :
         #    self.moveNextStep = False
         #    return self.turnLeft()
+        elif (compass <= 5.0 and compass >= 3.0) :
+            self.moveNextStep = False
+            return self.turnRight()
         elif (self.sensor['front'] == 0) :
             self.moveNextStep = False
             return self.moveForward()
