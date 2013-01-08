@@ -223,7 +223,6 @@ class TestClient(BaseRobotClient):
         nodeAlreadyAdded = False
         currentNode = 0
         for n in self.Graph.nodes(data = True) :
-            print "debug Node n['position'] : ", n[1]['position']
             if(n[1]['position'] == self.pos) :
                 nodeAlreadyAdded = True
                 currentNode = n[0]
@@ -236,8 +235,13 @@ class TestClient(BaseRobotClient):
             if(not(nodeAlreadyAdded)) :
                 self.Graph.add_edge(self.lastnode, self.nodecount, length = self.steps, dir = self.orientation, visited = False)
             #node already visited -> new edge from another node (previous)
-            elif(not(nx.dijkstra_path(self.Graph, self.lastnode, currentNode))) :
-                self.Graph.add_edge(self.lastnode, self.nodecount, length = self.steps, dir = self.orientation, visited = False)
+            else :
+                edgeAlreadyAdded = False
+                for e in self.Graph.edges() :
+                    if (currentNode in e and self.lastnode in e) :
+                        edgeAlreadyAdded = True 
+                if (not(edgeAlreadyAdded)) :
+                    self.Graph.add_edge(self.lastnode, self.nodecount, length = self.steps, dir = self.orientation, visited = False)
         
         
         if(not(nodeAlreadyAdded)) :
@@ -254,7 +258,9 @@ class TestClient(BaseRobotClient):
     
     #returns nodelist with the shortest path to the last crossroad
     def getBackToLastCrossRoad(self) :
-        return self.getWayToNode(self.crossroadlist[-1])
+        list = self.getWayToNode(self.crossroadlist[-1])
+        self.lastnode = list[-1]
+        return list
     
     #returns the moves to get back to given node
     #return format [[direction, length], [direction, length] ... ]
@@ -268,7 +274,6 @@ class TestClient(BaseRobotClient):
             distance = self.Graph.edge[currentNode][targetNode]['length']
             moveList.append([direction, distance])
             currentNode = targetNode
-        print moveList
         return moveList
     
     
@@ -279,15 +284,13 @@ class TestClient(BaseRobotClient):
     '''
     def addMovesToCommandList(self, moveList):
         cList = []
-        print "MoveList: ", moveList
         relativedirection = self.orientation
         while moveList :
             list = moveList.pop()
-            print "list: ", list
             direction = list[0]
             distance = list[1]
             if(direction != relativedirection) :
-                print "Direction: ", direction, " orientation: ", relativedirection
+                #print "Direction: ", direction, " orientation: ", relativedirection
                 if(direction == 3 and relativedirection == 0) :
                     cList.append('Left')
                     relativedirection = 3
@@ -360,7 +363,7 @@ class TestClient(BaseRobotClient):
             elif (not(compass == 0.0) and self.sensor['front'] != 0 and self.sensor['right'] != 0 and self.sensor['left'] != 0 ) :
                 self.commandList.extend(self.addMovesToCommandList(self.pathToMoves(self.getBackToLastCrossRoad())))
                 self.doCommands = True
-                print "CommandList: ", self.commandList
+                #print "CommandList: ", self.commandList
                 #print self.doCommand(self.commandList.pop())
                 if self.sensor['battery'] < len(self.commandList) :
                     self.commandList.append('Stay')
