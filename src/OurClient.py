@@ -10,7 +10,7 @@ import networkx as nx
 
 
 class TestClient(BaseRobotClient):
-    global moveNextStep, sensor, stayNextStep, bomb, Graph, sensorStrings, nodecount, lastnode, steps, orientation, orientationset, crossroadlist, commandList, bombsDropped, pos
+    global moveNextStep, sensor, stayNextStep, bomb, Graph, sensorStrings, nodecount, lastnode, nodebeforelast, steps, orientation, orientationset, crossroadlist, commandList, bombsDropped, pos
     #constants
     global CROSSROAD, DEADEND, TURN, HORI, VERT, UP, RIGHT, DOWN, LEFT
     
@@ -169,9 +169,12 @@ class TestClient(BaseRobotClient):
         
         
         '''get open paths from this node with relative orientation''' 
-        #the only open path for a Deadend is the pass we are coming from               
-        if(pathcount <= 1 and not ((compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0)) and self.bombsDropped < 3) :
-            nodetype = self.DEADEND
+        #the only open path for a Deadend is the pass we are coming from
+        if(pathcount <= 1) :
+            if(not ((compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0))) :
+                nodetype = self.DEADEND
+            else :
+                return self.DEADEND
             #set direction to go back
             
         #get open paths for crossroads        
@@ -255,6 +258,9 @@ class TestClient(BaseRobotClient):
             self.lastnode = currentNode
         self.steps = 0
     
+        return nodetype
+    
+    
     #returns nodelist with the shortest path to the targetnode     
     def getWayToNode(self, targetNode):
         return nx.dijkstra_path(self.Graph, self.lastnode, targetNode, 'length')
@@ -328,13 +334,16 @@ class TestClient(BaseRobotClient):
     
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         print "CommandList: ", self.commandList
+        currentType = None
         #print sensor_data, bumper
         self.printSensorData(sensor_data, bumper, compass, teleported)
         #set own sensor data
         if sensor_data != None :
+            print "Node added"
             self.setSensorData(sensor_data)
-            self.addNode(sensor_data, compass)
+            currentType = self.addNode(sensor_data, compass)
         
+
         #handle staying for battery recharging
         if (self.stayNextStep == 1) or (self.sensor['battery'] <= 10) or (self.moveNextStep == False) :
             return self.batteryHandler();
@@ -344,59 +353,93 @@ class TestClient(BaseRobotClient):
             return self.doCommand(self.commandList.pop())
         
         
-        elif ((compass == 2.0) or (compass == 6.0)) and (self.sensor['front'] == 0) :
-                self.moveNextStep = False
-                return self.moveForward()
+        elif(currentType == self.CROSSROAD) :
+            self.moveNextStep = False
+            return self.moveForward()
         
-        #compass handling
-        #
-        # 7 0 1
-        # 6 x 2
-        # 5 4 3
-        #
-        elif (compass == 0.0) or (compass == 1.0) or compass == 2.0 or (compass == 7.0) :
-            if self.sensor['front'] == 0 :
-                self.moveNextStep = False
-                return self.moveForward()
-
-            elif (compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0) and (self.bombsDropped < 3):
-                return self.bombDrop()
-
-            #if deadend and goal is not in front return to last node
-            elif (not(compass == 0.0) and self.sensor['front'] != 0 and self.sensor['right'] != 0 and self.sensor['left'] != 0 ) :
+        #DEADEND Handling
+        elif(currentType == self.DEADEND) :
+            if (compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0) and (self.bombsDropped < 3):
+                    return self.bombDrop()
+            else :
                 self.commandList.extend(self.addMovesToCommandList(self.pathToMoves(self.getBackToLastCrossRoad())))
                 #print "CommandList: ", self.commandList
                 #print self.doCommand(self.commandList.pop())
                 if self.sensor['battery'] < len(self.commandList) :
                     self.commandList.append('Stay')
                 return self.doCommand(self.commandList.pop())
-        
-            elif (compass == 1.0 or compass == 2.0) and (self.sensor['right'] == 0) :
-                self.moveNextStep = False
-                return self.turnRight()
-            elif (compass == 7.0) and (self.sensor['left'] == 0) :
-                self.moveNextStep = False
-                return self.turnLeft()
-            #elif (compass == 2.0) and (self.sensor['right'] == 0) :
-            #   self.moveNextStep = False
-            #  return self.turnRight()
-            #else :
-            #    return self.turnRight()
             
-        
-            
-        #elif (compass == 6.0) or (compass == 5.0) :
-        #    self.moveNextStep = False
-        #    return self.turnLeft()
-        elif (compass >= 3.0 and compass <= 5.0) :
+        #TURN Handling    
+        elif(currentType == self.TURN) :
             self.moveNextStep = False
-            return self.turnRight()
-        
-        elif (self.sensor['front'] == 0) :
+            dir = None
+            for i in self.Graph.node[self.lastnode]['openpaths'] :
+                if(i != self.orientation) :
+                    dir = i
+            if((self.orientation + 1) & 3 == dir) :
+                return self.turnRight()
+            else :
+                return self.turnLeft()
+            
+        #STRAIGHT Handling   
+        else : 
             self.moveNextStep = False
             return self.moveForward()
-        else :
-            return self.turnRight()
+        '''else : 
         
+            if ((compass == 2.0) or (compass == 6.0)) and (self.sensor['front'] == 0) :
+                    self.moveNextStep = False
+                    return self.moveForward()
+            
+            #compass handling
+            #
+            # 7 0 1
+            # 6 x 2
+            # 5 4 3
+            #
+            elif (compass == 0.0) or (compass == 1.0) or compass == 2.0 or (compass == 7.0) :
+                if self.sensor['front'] == 0 :
+                    self.moveNextStep = False
+                    return self.moveForward()
+    
+                elif (compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0) and (self.bombsDropped < 3):
+                    return self.bombDrop()
+    
+                #if deadend and goal is not in front return to last node
+                elif (not(compass == 0.0) and self.sensor['front'] != 0 and self.sensor['right'] != 0 and self.sensor['left'] != 0 ) :
+                    self.commandList.extend(self.addMovesToCommandList(self.pathToMoves(self.getBackToLastCrossRoad())))
+                    #print "CommandList: ", self.commandList
+                    #print self.doCommand(self.commandList.pop())
+                    if self.sensor['battery'] < len(self.commandList) :
+                        self.commandList.append('Stay')
+                    return self.doCommand(self.commandList.pop())
+            
+                elif (compass == 1.0 or compass == 2.0) and (self.sensor['right'] == 0) :
+                    self.moveNextStep = False
+                    return self.turnRight()
+                elif (compass == 7.0) and (self.sensor['left'] == 0) :
+                    self.moveNextStep = False
+                    return self.turnLeft()
+                #elif (compass == 2.0) and (self.sensor['right'] == 0) :
+                #   self.moveNextStep = False
+                #  return self.turnRight()
+                #else :
+                #    return self.turnRight()
+                
+            
+                
+            #elif (compass == 6.0) or (compass == 5.0) :
+            #    self.moveNextStep = False
+            #    return self.turnLeft()
+            elif (compass >= 3.0 and compass <= 5.0) :
+                self.moveNextStep = False
+                return self.turnRight()
+            
+            elif (self.sensor['front'] == 0) :
+                self.moveNextStep = False
+                return self.moveForward()
+            else :
+                return self.turnRight()
         
+      '''  
         print compass
