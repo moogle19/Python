@@ -27,6 +27,7 @@ class TestClient(BaseRobotClient):
         self.steps = 0
         self.bombsDropped = 0
         self.pos = {'x': 0, 'y': 0}
+        self.lastnode = 0
                
         self.moveNextStep = False
         self.orientationset = False
@@ -58,6 +59,7 @@ class TestClient(BaseRobotClient):
         
         #List for moves to do
         self.commandList = []
+        
         
     #TODO: relative to graph (2 steps back)
     def bombDrop(self):
@@ -188,7 +190,6 @@ class TestClient(BaseRobotClient):
                     openpath.append(0)
                 else :
                     openpath.append(self.orientation + 1)  
-            self.crossroadlist.append(self.nodecount)  
         
         #get open paths for turns
         elif(pathcount == 2) :
@@ -245,12 +246,14 @@ class TestClient(BaseRobotClient):
         
         
         if(not(nodeAlreadyAdded)) :
+            if(nodetype == self.CROSSROAD) :
+                self.crossroadlist.append(self.nodecount)  
+
             self.lastnode = self.nodecount
             self.nodecount += 1
         else :
             self.lastnode = currentNode
         self.steps = 0
-        return 1
     
     #returns nodelist with the shortest path to the targetnode     
     def getWayToNode(self, targetNode):
@@ -324,6 +327,10 @@ class TestClient(BaseRobotClient):
     
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         #print sensor_data, bumper
+        print "Current Position: ", self.pos
+        print "Last Node: ", self.lastnode
+        if(self.crossroadlist) :
+            print "Last Crossroad: ", self.crossroadlist[-1]
         if(not self.orientationset) :
             self.orientation = self.UP
             self.orientationset = True
@@ -386,6 +393,10 @@ class TestClient(BaseRobotClient):
         #elif (compass == 6.0) or (compass == 5.0) :
         #    self.moveNextStep = False
         #    return self.turnLeft()
+        elif (compass >= 3.0 and compass <= 5.0) :
+            self.moveNextStep = False
+            return self.turnRight()
+        
         elif (self.sensor['front'] == 0) :
             self.moveNextStep = False
             return self.moveForward()
