@@ -10,7 +10,7 @@ import networkx as nx
 
 
 class TestClient(BaseRobotClient):
-    global moveNextStep, sensor, stay, bomb, Graph, sensorStrings, nodecount, lastnode, steps, orientation, orientationset, crossroadlist, commandList, bombsDropped, doCommands, pos
+    global moveNextStep, sensor, stayNextStep, bomb, Graph, sensorStrings, nodecount, lastnode, steps, orientation, orientationset, crossroadlist, commandList, bombsDropped, doCommands, pos
     #constants
     global CROSSROAD, DEADEND, TURN, HORI, VERT, UP, RIGHT, DOWN, LEFT
     
@@ -22,7 +22,7 @@ class TestClient(BaseRobotClient):
         self.sensor = {'right': 0, 'left': 0, 'front':0, 'back': 0, 'battery': 100}     
         self.sensorStrings = ['front', 'right', 'back', 'left']
         self.index = 0
-        self.stay = 0
+        self.stayNextStep = 0
         self.bomb = 0
         self.steps = 0
         self.bombsDropped = 0
@@ -123,17 +123,17 @@ class TestClient(BaseRobotClient):
         self.sensor['battery'] = sensor_data['battery']
         
     def batteryHandler(self):
-        if (self.stay == 1):
+        if (self.stayNextStep == 1):
             if (self.staytime <= 50) :
                 self.staytime += 1
                 return Command.Stay           
             else :
-                self.stay = 0
+                self.stayNextStep = 0
                 self.staytime = 0
                 self.moveNextStep = True
                 return Command.Sense
         elif self.sensor['battery'] <= 10 :
-            self.stay = 1
+            self.stayNextStep = 1
             return Command.Stay
         else :
             self.moveNextStep = True
@@ -257,6 +257,7 @@ class TestClient(BaseRobotClient):
             distance = self.Graph.edge[currentNode][targetNode]['length']
             moveList.append([direction, distance])
             currentNode = targetNode
+        print moveList
         return moveList
     
     
@@ -267,20 +268,31 @@ class TestClient(BaseRobotClient):
     '''
     def addMovesToCommandList(self, moveList):
         cList = []
-        for list in moveList :
+        print "MoveList: ", moveList
+        relativedirection = self.orientation
+        while moveList :
+            list = moveList.pop()
+            print "list: ", list
             direction = list[0]
             distance = list[1]
-            if(direction != self.orientation) :
-                print "Direction: ", direction, " orientation: ", self.orientation
-                while(direction > self.orientation):
-                    cList.append('Right')
-                    direction -= 1
-                while(direction < self.orientation):
+            if(direction != relativedirection) :
+                print "Direction: ", direction, " orientation: ", relativedirection
+                if(direction == 3 and relativedirection == 0) :
                     cList.append('Left')
-                    direction += 1
-            for x in range(0, distance):
-                cList.append('Forward')
-        cList.append('Right')
+                    relativedirection = 3
+                elif(direction == 0 and relativedirection == 3) :
+                    cList.append('Right')
+                    relativedirection = 0
+                while(direction < relativedirection):
+                    cList.append('Left')
+                    relativedirection -= 1
+                while(direction > relativedirection):
+                    cList.append('Right')
+                    relativedirection += 1
+                for x in range(0, distance):
+                    cList.append('Forward')
+            
+        cList.reverse()
         return cList
     
     def doCommand(self, command):
@@ -294,7 +306,7 @@ class TestClient(BaseRobotClient):
         elif(command == 'DropBomb'):
             return self.dropBomb()
         elif(command == 'Stay'):
-            return self.stay()
+            return self.stayNextStep()
     
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         #print sensor_data, bumper
@@ -306,7 +318,7 @@ class TestClient(BaseRobotClient):
             self.setSensorData(sensor_data)
             self.addNode(sensor_data, compass)
         
-        if (self.stay == 1) or (self.sensor['battery'] <= 10) or (self.moveNextStep == False) :
+        if (self.stayNextStep == 1) or (self.sensor['battery'] <= 10) or (self.moveNextStep == False) :
             return self.batteryHandler();
         
         elif self.commandList and self.doCommands:
@@ -335,8 +347,14 @@ class TestClient(BaseRobotClient):
 
             #if deadend and goal is not in front return to last node
             elif (not(compass == 0.0) and self.sensor['front'] != 0 and self.sensor['right'] != 0 and self.sensor['left'] != 0 ) :
-                self.returnToLastNode = True
-                return self.turnRight()
+                self.commandList.extend(self.addMovesToCommandList(self.pathToMoves(self.getBackToLastCrossRoad())))
+                self.doCommands = True
+                print "CommandList: ", self.commandList
+                #print self.doCommand(self.commandList.pop())
+                if self.sensor['battery'] < len(self.commandList) :
+                    self.commandList.append('Stay')
+                return self.doCommand(self.commandList.pop())
+        
             elif (compass == 1.0 or compass == 2.0) and (self.sensor['right'] == 0) :
                 self.moveNextStep = False
                 return self.turnRight()
@@ -358,13 +376,7 @@ class TestClient(BaseRobotClient):
             self.moveNextStep = False
             return self.moveForward()
         else :
-            self.commandList.extend(self.addMovesToCommandList(self.pathToMoves(self.getBackToLastCrossRoad())))
-            self.doCommands = True
-            print "CommandList: ", self.commandList
-            #print self.doCommand(self.commandList.pop())
-            if self.sensor['battery'] < len(self.commandList) :
-                self.commandList.append('Stay')
-            return self.doCommand(self.commandList.pop())
+            return self.turnRight()
         
         
         print compass
