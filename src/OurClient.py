@@ -84,8 +84,7 @@ class TestClient(BaseRobotClient):
     def turnLeft(self):
         self.orientation -= 1
         self.sensor['battery'] -= 1
-        if(self.orientation < 0) :
-            self.orientation = 3
+        self.orientation &= 3
         return Command.LeftTurn
     
     def moveForward(self):
@@ -176,30 +175,16 @@ class TestClient(BaseRobotClient):
             if(self.sensor['front'] == 0) :
                 openpath.append(self.orientation)
             if(self.sensor['left'] == 0) :
-                if(self.orientation - 1 < 0) :
-                    openpath.append(3)
-                else :
-                    openpath.append(self.orientation - 1)
+                openpath.append((self.orientation-1)&3)
             if(self.sensor['right'] == 0) :
-#                if(self.orientation + 1 > 3) :
-#                    openpath.append(0)
-#                else :
-#                    openpath.append(self.orientation + 1)  
-            
                 openpath.append((self.orientation+1)&3)
         #get open paths for turns
         elif(pathcount == 2) :
             nodetype = self.TURN
             if(self.sensor['left'] == 0 and self.sensor['right'] != 0 and self.sensor['front'] != 0) :
-                if(self.orientation - 1 < 0) :
-                    openpath.append(3)
-                else :
-                    openpath.append(self.orientation - 1)
+                openpath.append((self.orientation-1)&3)
             elif(self.sensor['right'] == 0 and self.sensor['left'] != 0 and self.sensor['front'] != 0) :
-                if(self.orientation + 1 > 3) :
-                    openpath.append(0)
-                else :
-                    openpath.append(self.orientation + 1)
+                openpath.append((self.orientation+1)&3)
             else :
                 return None
              
