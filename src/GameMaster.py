@@ -89,7 +89,7 @@ class GameMaster(object):
         self.maze.updateRobotStates(self.robot_states)
         while i < 1000 and not self.gameFinished(): #i < 10: #
             i += 1
-            sleep(0.5)
+            #sleep(0.5)
             self.visualizer.showState()
             #a = raw_input()
             print "round",i

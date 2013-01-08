@@ -221,19 +221,30 @@ class TestClient(BaseRobotClient):
             fromPath += 4
         
         nodeAlreadyAdded = False
+        currentNode = 0
         for n in self.Graph.nodes(data = True) :
             print "debug Node n['position'] : ", n[1]['position']
             if(n[1]['position'] == self.pos) :
                 nodeAlreadyAdded = True
+                currentNode = n[0]
                 
         if (not(nodeAlreadyAdded)) :
             self.Graph.add_node(self.nodecount, type = nodetype, openpaths = openpath, fromNode = last, fromPath = fromPath, position = dict(self.pos))
-        
-        #TODO: Avoid adding edge twice
+            
         if(self.nodecount > 1) :
-            self.Graph.add_edge(self.lastnode, self.nodecount, length = self.steps, dir = self.orientation, visited = False)
-        self.lastnode = self.nodecount
-        self.nodecount += 1
+            #node not known -> add edge from previous node
+            if(not(nodeAlreadyAdded)) :
+                self.Graph.add_edge(self.lastnode, self.nodecount, length = self.steps, dir = self.orientation, visited = False)
+            #node already visited -> new edge from another node (previous)
+            elif(not(nx.dijkstra_path(self.Graph, self.lastnode, currentNode))) :
+                self.Graph.add_edge(self.lastnode, self.nodecount, length = self.steps, dir = self.orientation, visited = False)
+        
+        
+        if(not(nodeAlreadyAdded)) :
+            self.lastnode = self.nodecount
+            self.nodecount += 1
+        else :
+            self.lastnode = currentNode
         self.steps = 0
         return 1
     
