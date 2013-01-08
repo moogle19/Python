@@ -227,7 +227,7 @@ class TestClient(BaseRobotClient):
             if(n[1]['position'] == self.pos) :
                 nodeAlreadyAdded = True
                 currentNode = n[0]
-                
+                #n[1]['openpaths'].remove((self.orientation + 2) % 4)
         if (not(nodeAlreadyAdded)) :
             self.Graph.add_node(self.nodecount, type = nodetype, openpaths = openpath, fromNode = last, fromPath = fromPath, position = dict(self.pos))
             
