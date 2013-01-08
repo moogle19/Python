@@ -89,7 +89,7 @@ class GameMaster(object):
         self.maze.updateRobotStates(self.robot_states)
         while i < 100000 and not self.gameFinished(): #i < 10: #
             i += 1
-            sleep(0.5)
+            #sleep(0.3)
             self.visualizer.showState()
             #a = raw_input()
             print "round",i
@@ -107,8 +107,8 @@ class GameMaster(object):
                 '''commentend out to see the error message'''
                 #except:
                     #print "Error in robot",name,"continue" 
-                #print name, "command:", Command.names[command]
-                #print "battery: ", self.robot_states[name].battery
+                print name, "command:", Command.names[command]
+                print "battery: ", self.robot_states[name].battery
 
                 self.robot_states[name].bumper = False
                 self.robot_states[name].teleported = False

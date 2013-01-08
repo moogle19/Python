@@ -148,7 +148,7 @@ class TestClient(BaseRobotClient):
     def returnToLastCrossroad(self):
         if(not(self.commandList)) :
             self.commandList.append('Sense')
-            self.commandList.append('Stay')
+            self.commandList.append('Sense')
             self.commandList.extend(self.addMovesToCommandList(self.pathToMoves(self.getBackToLastCrossRoad())))
             self.returnToNode = True
         if self.sensor['battery'] < len(self.commandList) :
@@ -157,6 +157,10 @@ class TestClient(BaseRobotClient):
         if(not(self.commandList)) :
             self.returnToNode = False
             #self.moveNextStep = False
+        print "lastnode:::::::: ", self.lastnode
+        print "last crossroad::::::: ", self.crossroadlist[-1]
+        print "commandList:::::: ", self.commandList
+
         return self.doCommand(ret)
 
     
@@ -190,7 +194,7 @@ class TestClient(BaseRobotClient):
         '''get open paths from this node with relative orientation''' 
         #the only open path for a Deadend is the pass we are coming from
         if(pathcount <= 1) :
-            if(not ((compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0))) :
+            if(not ((compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0)) or self.bombsDropped >= 3) :
                 nodetype = self.DEADEND
             else :
                 return self.DEADEND
@@ -289,9 +293,15 @@ class TestClient(BaseRobotClient):
     
     #returns nodelist with the shortest path to the last crossroad
     def getBackToLastCrossRoad(self) :
-        list = self.getWayToNode(self.crossroadlist[-1])
+        thenode = self.Graph.node[self.lastnode]['fromNode']
+        while True :
+            if(self.Graph.node[thenode]['type'] == self.CROSSROAD) :
+                break
+            tmp = self.Graph.node[thenode]['fromNode']
+            thenode = tmp
+        #list = self.getWayToNode(self.crossroadlist[-1])
+        list = self.getWayToNode(thenode)
         self.lastnode = list[-1]
-        print "LISTE: ", list
         return list
     
     #returns the moves to get back to given node
@@ -356,8 +366,7 @@ class TestClient(BaseRobotClient):
             return Command.Sense
     
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
-        print "CommandList: ", self.commandList
-        print "Orientation: ", self.orientation
+        
         currentType = None
         #print sensor_data, bumper
         self.printSensorData(sensor_data, bumper, compass, teleported)
@@ -401,17 +410,15 @@ class TestClient(BaseRobotClient):
                 if(self.orientation in open and self.orientation != fr) :
                     self.Graph.node[self.lastnode]['openpaths'].remove(self.orientation)
                     return self.moveForward()
+            
             if(len(open) <= 1) :
-                if(((self.orientation - 1) & 3) == fr) :
-                    return self.turnLeft()
-                if(((self.orientation + 1) & 3) == fr) :
-                    return self.turnRight()
-                if(((self.orientation - 2) & 3) == fr) :
-                    return self.turnRight()
+                self.crossroadlist.pop()
+                return self.returnToLastCrossroad()
+ 
 
-            if(((self.orientation - 1) & 3) in open) :
+            if(((self.orientation - 1) & 3) in open and ((self.orientation - 1) & 3) != fr) :
                 return self.turnLeft()
-            if(((self.orientation + 1) & 3) in open) :
+            if(((self.orientation + 1) & 3) in open and ((self.orientation + 1) & 3) != fr) :
                 return self.turnRight()
             return self.turnRight()
             
@@ -421,7 +428,6 @@ class TestClient(BaseRobotClient):
             if (compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0) and (self.bombsDropped < 3):
                     return self.bombDrop()
             elif (self.crossroadlist) :
-                print "Crossroad List: ", self.crossroadlist
                 return self.returnToLastCrossroad()
                 #print "CommandList: ", self.commandList
                 #print self.doCommand(self.commandList.pop())
