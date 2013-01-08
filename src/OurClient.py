@@ -6,11 +6,13 @@ Created on Wed Nov 7 10:52:51 2012
 @author Valentin Bruder
 """
 from BaseRobotClient import *
+from time import sleep
+
 import networkx as nx
 
 
 class TestClient(BaseRobotClient):
-    global moveNextStep, sensor, stayNextStep, bomb, Graph, sensorStrings, nodecount, lastnode, nodebeforelast, steps, orientation, orientationset, crossroadlist, commandList, bombsDropped, pos
+    global returnToNode, moveNextStep, sensor, stayNextStep, bomb, Graph, sensorStrings, nodecount, lastnode, nodebeforelast, steps, orientation, orientationset, crossroadlist, commandList, bombsDropped, pos
     #constants
     global CROSSROAD, DEADEND, TURN, HORI, VERT, UP, RIGHT, DOWN, LEFT
     
@@ -28,6 +30,7 @@ class TestClient(BaseRobotClient):
         self.bombsDropped = 0
         self.pos = {'x': 0, 'y': 0}
         self.lastnode = 0
+        self.returnToNode = False
                
         self.moveNextStep = False
         self.orientationset = False
@@ -141,6 +144,22 @@ class TestClient(BaseRobotClient):
             self.moveNextStep = True
             return Command.Sense
     
+    
+    def returnToLastCrossroad(self):
+        if(not(self.commandList)) :
+            self.commandList.append('Sense')
+            self.commandList.append('Stay')
+            self.commandList.extend(self.addMovesToCommandList(self.pathToMoves(self.getBackToLastCrossRoad())))
+            self.returnToNode = True
+        if self.sensor['battery'] < len(self.commandList) :
+            self.commandList.append('Stay')
+        ret = self.commandList.pop()
+        if(not(self.commandList)) :
+            self.returnToNode = False
+            #self.moveNextStep = False
+        return self.doCommand(ret)
+
+    
     def addNode(self, sensor_data, compass):
         #TODO: add paths from nodes A to B and B to A
         #TODO: Avoid adding node twice
@@ -230,7 +249,10 @@ class TestClient(BaseRobotClient):
             if(n[1]['position'] == self.pos) :
                 nodeAlreadyAdded = True
                 currentNode = n[0]
-                n[1]['openpaths'].remove((self.orientation + 2) % 4)
+                if((self.orientation + 2) % 4 in n[1]['openpaths'] and self.returnToNode) : 
+                    #n[1]['openpaths'].remove((self.orientation + 2) % 4)
+                    if(len(n[1]['openpaths']) <= 1) :
+                        self.crossroadlist.pop()
         if (not(nodeAlreadyAdded)) :
             self.Graph.add_node(self.nodecount, type = nodetype, openpaths = openpath, fromNode = last, fromPath = fromPath, position = dict(self.pos))
             
@@ -245,7 +267,7 @@ class TestClient(BaseRobotClient):
                     if (currentNode in e and self.lastnode in e) :
                         edgeAlreadyAdded = True 
                 if (not(edgeAlreadyAdded)) :
-                    self.Graph.add_edge(self.lastnode, self.nodecount, length = self.steps, dir = self.orientation, visited = False)
+                    self.Graph.add_edge(self.lastnode, currentNode, length = self.steps, dir = self.orientation, visited = False)
         
         
         if(not(nodeAlreadyAdded)) :
@@ -269,6 +291,7 @@ class TestClient(BaseRobotClient):
     def getBackToLastCrossRoad(self) :
         list = self.getWayToNode(self.crossroadlist[-1])
         self.lastnode = list[-1]
+        print "LISTE: ", list
         return list
     
     #returns the moves to get back to given node
@@ -328,26 +351,32 @@ class TestClient(BaseRobotClient):
         elif(command == 'DropBomb'):
             return self.dropBomb()
         elif(command == 'Stay'):
-            return self.stayNextStep()
+            return self.stay()
         elif(command == 'Sense'):
             return Command.Sense
     
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         print "CommandList: ", self.commandList
+        print "Orientation: ", self.orientation
         currentType = None
         #print sensor_data, bumper
         self.printSensorData(sensor_data, bumper, compass, teleported)
         #set own sensor data
         if sensor_data != None :
-            print "Node added"
             self.setSensorData(sensor_data)
             currentType = self.addNode(sensor_data, compass)
+            if(self.sensor['front'] == 192) :
+                print "WON!!!"
+                while(1) :
+                    1
         
 
         #handle staying for battery recharging
         if (self.stayNextStep == 1) or (self.sensor['battery'] <= 10) or (self.moveNextStep == False) :
             return self.batteryHandler();
         
+        elif self.returnToNode :
+            return self.returnToLastCrossroad()
         
         elif self.commandList :
             return self.doCommand(self.commandList.pop())
@@ -356,21 +385,34 @@ class TestClient(BaseRobotClient):
         elif(currentType == self.CROSSROAD) :
             self.moveNextStep = False
             open = self.Graph.node[self.lastnode]['openpaths']
-            
+            fr = self.Graph.node[self.lastnode]['fromPath']
+                        
             if(len(open) > 1) :
                 if(compass <= 1.0 or compass == 7.0) :
-                    if(self.orientation in open) :
+                    if(self.orientation in open and self.orientation != fr) :
+                        self.Graph.node[self.lastnode]['openpaths'].remove(self.orientation)
                         return self.moveForward()
                 if(compass <= 7.0 and compass >= 5.0) :
-                    if(((self.orientation - 1) & 3) in open) :
+                    if(((self.orientation - 1) & 3) in open and ((self.orientation - 1) & 3) != fr) :
                         return self.turnLeft()
                 if(compass >= 1.0 and compass <= 3.0) :
-                    if(((self.orientation + 1) & 3) in open) :
+                    if(((self.orientation + 1) & 3) in open and ((self.orientation + 1) & 3) != fr) :
                         return self.turnRight()
-                if(self.orientation in open) :
+                if(self.orientation in open and self.orientation != fr) :
+                    self.Graph.node[self.lastnode]['openpaths'].remove(self.orientation)
                     return self.moveForward()
-            
-            
+            if(len(open) <= 1) :
+                if(((self.orientation - 1) & 3) == fr) :
+                    return self.turnLeft()
+                if(((self.orientation + 1) & 3) == fr) :
+                    return self.turnRight()
+                if(((self.orientation - 2) & 3) == fr) :
+                    return self.turnRight()
+
+            if(((self.orientation - 1) & 3) in open) :
+                return self.turnLeft()
+            if(((self.orientation + 1) & 3) in open) :
+                return self.turnRight()
             return self.turnRight()
             
         
@@ -378,29 +420,38 @@ class TestClient(BaseRobotClient):
         elif(currentType == self.DEADEND) :
             if (compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0) and (self.bombsDropped < 3):
                     return self.bombDrop()
-            else :
-                self.commandList.extend(self.addMovesToCommandList(self.pathToMoves(self.getBackToLastCrossRoad())))
+            elif (self.crossroadlist) :
+                print "Crossroad List: ", self.crossroadlist
+                return self.returnToLastCrossroad()
                 #print "CommandList: ", self.commandList
                 #print self.doCommand(self.commandList.pop())
-                if self.sensor['battery'] < len(self.commandList) :
-                    self.commandList.append('Stay')
-                return self.doCommand(self.commandList.pop())
+                #if self.sensor['battery'] < len(self.commandList) :
+                #    self.commandList.append('Stay')
+                #return self.doCommand(self.commandList.pop())
+            elif (self.sensor['front'] == 0) :
+                self.moveNextStep = False
+                return self.moveForward()
+            else :
+                self.moveNextStep = False
+                return self.turnRight()
             
         #TURN Handling    
         elif(currentType == self.TURN) :
             self.moveNextStep = False
             dir = None
             for i in self.Graph.node[self.lastnode]['openpaths'] :
-                if(i != self.orientation) :
+                if(i != (self.orientation + 2) & 3) :
                     dir = i
             if((self.orientation + 1) & 3 == dir) :
                 return self.turnRight()
             else :
                 return self.turnLeft()
-            
         #STRAIGHT Handling   
-        else : 
+        else :
             self.moveNextStep = False
-            return self.moveForward()
+            if(self.sensor['front'] == 0) :
+                return self.moveForward()
+            else :
+                return self.turnRight()
         
         print compass

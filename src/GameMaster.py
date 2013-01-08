@@ -46,7 +46,7 @@ class GameMaster(object):
     def __init__(self):
         self.robot_clients = {}
         self.robot_states = {}
-        self.maze = Maze('../data/maze1.pgm')
+        self.maze = Maze('../data/maze2.pgm')
         # don't use: self.visualizer = GameVisualizerImage(self.maze)
         self.visualizer = GameVisualizer(self.maze)
         #self.visualizer = GameVisualizerRawTerminal(self.maze)
@@ -87,9 +87,9 @@ class GameMaster(object):
     def startGame(self):
         i = 0 # just for testing
         self.maze.updateRobotStates(self.robot_states)
-        while i < 1000 and not self.gameFinished(): #i < 10: #
+        while i < 100000 and not self.gameFinished(): #i < 10: #
             i += 1
-            sleep(0.2)
+            sleep(0.5)
             self.visualizer.showState()
             #a = raw_input()
             print "round",i
@@ -107,8 +107,8 @@ class GameMaster(object):
                 '''commentend out to see the error message'''
                 #except:
                     #print "Error in robot",name,"continue" 
-                print name, "command:", Command.names[command]
-                print "battery: ", self.robot_states[name].battery
+                #print name, "command:", Command.names[command]
+                #print "battery: ", self.robot_states[name].battery
 
                 self.robot_states[name].bumper = False
                 self.robot_states[name].teleported = False
@@ -164,8 +164,8 @@ if __name__ == "__main__":
     
     #for name in sys.argv:
     #    master.addClient(name)
-    master.addClient("TestClient")
     #master.addClient("TestClient")
+    master.addClient("TestClient")
     master.addClient("OurClient")
     #master.addClient("TestClient")
     master.initGame()    
