@@ -78,8 +78,7 @@ class TestClient(BaseRobotClient):
     def turnRight(self):
         self.orientation += 1
         self.sensor['battery'] -= 1
-        if(self.orientation > 3) :
-            self.orientation = 0
+        self.orientation &= 3
         return Command.RightTurn
     
     def turnLeft(self):
@@ -162,11 +161,7 @@ class TestClient(BaseRobotClient):
         
         
         #assumption: the path we are coming from must be free
-        if(self.orientation + 2 <= 3) :
-            openpath.append(self.orientation + 2)
-        else :
-            openpath.append(self.orientation - 2)
-        
+        openpath.append((self.orientation+2)&3)
         
         '''get open paths from this node with relative orientation''' 
         #the only open path for a Deadend is the pass we are coming from               
@@ -186,11 +181,12 @@ class TestClient(BaseRobotClient):
                 else :
                     openpath.append(self.orientation - 1)
             if(self.sensor['right'] == 0) :
-                if(self.orientation + 1 > 3) :
-                    openpath.append(0)
-                else :
-                    openpath.append(self.orientation + 1)  
-        
+#                if(self.orientation + 1 > 3) :
+#                    openpath.append(0)
+#                else :
+#                    openpath.append(self.orientation + 1)  
+            
+                openpath.append((self.orientation+1)&3)
         #get open paths for turns
         elif(pathcount == 2) :
             nodetype = self.TURN
