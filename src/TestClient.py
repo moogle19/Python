@@ -17,11 +17,11 @@ class TestClient(BaseRobotClient):
 
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         #print sensor_data, bumper
-        print "compass: ",compass
-        if teleported:
-            print "ups I was teleported"
-        if sensor_data != None:
-            print sensor_data
+        #print "compass: ",compass
+        #if teleported:
+            #print "ups I was teleported"
+        #if sensor_data != None:
+            #print sensor_data
         
         cmd = self.commands[self.index]
         self.index += 1

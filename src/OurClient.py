@@ -61,7 +61,7 @@ class TestClient(BaseRobotClient):
         
     #TODO: relative to graph (2 steps back)
     def bombDrop(self):
-        print "DROPING BOMB!"
+        print "DROPPING BOMB!"
         commands = ['Right', 'Forward', 'DropBomb', 'Forward', 'Right', 'Right', 'Forward', 'Forward']
         commands.reverse()
         self.commandList = commands
@@ -219,7 +219,15 @@ class TestClient(BaseRobotClient):
         fromPath = self.orientation - 2
         if(fromPath < 0) :
             fromPath += 4
-        self.Graph.add_node(self.nodecount, type = nodetype, openpaths = openpath, fromNode = last, fromPath = fromPath)
+        
+        nodeAlreadyAdded = False
+        for n in self.Graph.nodes(data = True) :
+            print "debug Node n['position'] : ", n[1]['position']
+            if(n[1]['position'] == self.pos) :
+                nodeAlreadyAdded = True
+                
+        if (not(nodeAlreadyAdded)) :
+            self.Graph.add_node(self.nodecount, type = nodetype, openpaths = openpath, fromNode = last, fromPath = fromPath, position = dict(self.pos))
         
         #TODO: Avoid adding edge twice
         if(self.nodecount > 1) :
