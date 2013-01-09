@@ -42,6 +42,8 @@ class TestClient(BaseRobotClient):
         
         self.Graph = nx.Graph();
         
+        
+        
         #CONSTANTS
         
         #NODE IDENTIFIER
@@ -103,7 +105,7 @@ class TestClient(BaseRobotClient):
             self.commandList.append('Stay')
         self.commandList.append('Sense')
         return self.moveForward()
-                
+    
     def turnRight(self):
         self.orientation += 1
         self.sensor['battery'] -= 1
