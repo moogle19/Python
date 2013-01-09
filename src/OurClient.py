@@ -323,6 +323,10 @@ class TestClient(BaseRobotClient):
     def getBackToLastCrossRoad(self) :
         thenode = self.Graph.node[self.lastnode]['fromNode']
         while True :
+            if(self.Graph.node[thenode]['fromNode'] == None) :
+                print "YOU ARE STUCK"
+                while 1:
+                    1
             if(self.Graph.node[thenode]['type'] == self.CROSSROAD) :
                 break
             tmp = self.Graph.node[thenode]['fromNode']

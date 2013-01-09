@@ -47,7 +47,7 @@ class GameMaster(object):
     def __init__(self):
         self.robot_clients = {}
         self.robot_states = {}
-        self.maze = Maze('../data/maze1.pgm')
+        self.maze = Maze('../data/maze2.pgm')
         # don't use: self.visualizer = GameVisualizerImage(self.maze)
         self.visualizer = GameVisualizer(self.maze)
         #self.visualizer = GameVisualizerColor(self.maze)
