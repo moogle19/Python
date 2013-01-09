@@ -12,6 +12,7 @@ from Maze import *
 from BaseRobotClient import *
 #from GameVisualizerMatplotlib import GameVisualizerMatplotlib as GameVisualizer
 from GameVisualizerRawTerminal import GameVisualizerRawTerminal as GameVisualizer
+from GameVisualizerColorTerminal import GameVisualizerColorTerminal as GameVisualizerColor
 #from GameVisualizerColorTerminal import GameVisualizerColorTerminal
 #from GameVisualizerImage import GameVisualizerImage
 
@@ -49,6 +50,7 @@ class GameMaster(object):
         self.maze = Maze('../data/maze2.pgm')
         # don't use: self.visualizer = GameVisualizerImage(self.maze)
         self.visualizer = GameVisualizer(self.maze)
+        #self.visualizer = GameVisualizerColor(self.maze)
         #self.visualizer = GameVisualizerRawTerminal(self.maze)
 
     def addClient(self, clientName):
@@ -90,8 +92,9 @@ class GameMaster(object):
         while i < 100000 and not self.gameFinished(): #i < 10: #
             i += 1
             #if(i > 3000) : 
-            #   sleep(0.5)
-            self.visualizer.showState()
+            #    a = raw_input()
+            #self.visualizer.showState()
+            #sleep(0.02)
             #a = raw_input()
             print "round",i
             for name, robot in self.robot_clients.items():
@@ -113,6 +116,7 @@ class GameMaster(object):
 
                 self.robot_states[name].bumper = False
                 self.robot_states[name].teleported = False
+                self.robot_states[name].battery = 100
                 if command == Command.RightTurn:
                     if self.robot_states[name].battery > 0:
                         self.robot_states[name].battery -= 1
@@ -166,7 +170,7 @@ if __name__ == "__main__":
     #for name in sys.argv:
     #    master.addClient(name)
     #master.addClient("TestClient")
-    master.addClient("TestClient")
+    #master.addClient("TestClient")
     master.addClient("OurClient")
     #master.addClient("TestClient")
     master.initGame()    
