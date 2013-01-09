@@ -166,7 +166,7 @@ if __name__ == "__main__":
     #for name in sys.argv:
     #    master.addClient(name)
     #master.addClient("TestClient")
-    master.addClient("TestClient")
+    #master.addClient("TestClient")
     master.addClient("OurClient")
     #master.addClient("TestClient")
     master.initGame()    

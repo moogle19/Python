@@ -14,7 +14,7 @@ import networkx as nx
 class TestClient(BaseRobotClient):
     global returnToNode, moveNextStep, sensor, stayNextStep, bomb, Graph, sensorStrings, nodecount, lastnode, nodebeforelast, steps, orientation, orientationset, crossroadlist, commandList, bombsDropped, pos
     #constants
-    global CROSSROAD, DEADEND, TURN, HORI, VERT, UP, RIGHT, DOWN, LEFT
+    global CROSSROAD, DEADEND, TURN,ENERGY, HORI, VERT, UP, RIGHT, DOWN, LEFT
     
     def __init__(self):
         super(TestClient , self).__init__()
@@ -48,6 +48,9 @@ class TestClient(BaseRobotClient):
         self.CROSSROAD = 0
         self.DEADEND = 1
         self.TURN = 2
+        self.PORTAL = 3
+        self.STONE = 4
+        self.ENERGY = 5
         
         #EDGE DIRECTION IDENTIFIER 
         self.VERT = 0
@@ -93,7 +96,14 @@ class TestClient(BaseRobotClient):
     def dropBomb(self):
         self.bombsDropped += 1
         return Command.DropBomb
-            
+    
+    def energyHandler(self):
+        staytime = int((100 - self.sensor['battery']) / 30 )
+        for x in range(0,staytime):
+            self.commandList.append('Stay')
+        self.commandList.append('Sense')
+        return self.moveForward()
+                
     def turnRight(self):
         self.orientation += 1
         self.sensor['battery'] -= 1
@@ -181,8 +191,6 @@ class TestClient(BaseRobotClient):
 
     
     def addNode(self, sensor_data, compass):
-        #TODO: add paths from nodes A to B and B to A
-        #TODO: Avoid adding node twice
         pathcount = 0;
         openpath = [] #list for directions which are open
                 
@@ -204,16 +212,15 @@ class TestClient(BaseRobotClient):
         # assumption: the path we are coming from must be free
         openpath.append((self.orientation + 2) & 3)
         
-        
-        '''get open paths from this node with relative orientation''' 
+        #get open paths from this node with relative orientation
         #the only open path for a Deadend is the pass we are coming from
         if(pathcount <= 1) :
+            #In case of bomb available and pointing towards goal: blow; Otherwise: add node as deadend
             if(not ((compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0)) and self.bombsDropped < 3) :
                 nodetype = self.DEADEND
             else :
                 return self.DEADEND
             #set direction to go back
-            
         #get open paths for crossroads        
         elif(pathcount >= 3) :
             nodetype = self.CROSSROAD
@@ -233,7 +240,7 @@ class TestClient(BaseRobotClient):
                 openpath.append((self.orientation + 1) & 3)
             else :
                 return None
-             
+          
         #if it is not a node return None, return is only there to stop the method. 
         else :
             return None     
@@ -390,17 +397,20 @@ class TestClient(BaseRobotClient):
                 while(1) :
                     1
         
-
-        #handle staying for battery recharging
-        if (self.stayNextStep == 1) or (self.sensor['battery'] <= 10) or (self.moveNextStep == False) :
-            return self.batteryHandler();
         
+        #handle staying for battery recharging
+        
+        if (self.stayNextStep == 1) or (self.sensor['battery'] <= 10) or (self.moveNextStep == False) :
+            return self.batteryHandler()
+
         elif self.returnToNode :
             return self.returnToLastCrossroad()
         
         elif self.commandList :
             return self.doCommand(self.commandList.pop())
         
+        elif(self.sensor['front'] == 128 and self.sensor['battery'] < 70 ) :
+            return self.energyHandler()
         
         elif(currentType == self.CROSSROAD) :
             self.moveNextStep = False
