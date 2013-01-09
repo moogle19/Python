@@ -158,8 +158,10 @@ class TestClient(BaseRobotClient):
             self.returnToNode = False
             #self.moveNextStep = False
         print "lastnode:::::::: ", self.lastnode
+        print "Crossroadlist: ", self.crossroadlist
         print "last crossroad::::::: ", self.crossroadlist[-1]
         print "commandList:::::: ", self.commandList
+        #a = raw_input()
 
         return self.doCommand(ret)
 
@@ -194,7 +196,7 @@ class TestClient(BaseRobotClient):
         '''get open paths from this node with relative orientation''' 
         #the only open path for a Deadend is the pass we are coming from
         if(pathcount <= 1) :
-            if(not ((compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0)) or self.bombsDropped >= 3) :
+            if(not ((compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0)) and self.bombsDropped < 3) :
                 nodetype = self.DEADEND
             else :
                 return self.DEADEND
@@ -253,10 +255,10 @@ class TestClient(BaseRobotClient):
             if(n[1]['position'] == self.pos) :
                 nodeAlreadyAdded = True
                 currentNode = n[0]
-                if((self.orientation + 2) % 4 in n[1]['openpaths'] and self.returnToNode) : 
+                #if((self.orientation + 2) % 4 in n[1]['openpaths'] and self.returnToNode) : 
                     #n[1]['openpaths'].remove((self.orientation + 2) % 4)
-                    if(len(n[1]['openpaths']) <= 1) :
-                        self.crossroadlist.pop()
+                    #if(len(n[1]['openpaths']) <= 1) :
+                        #self.crossroadlist.pop()
         if (not(nodeAlreadyAdded)) :
             self.Graph.add_node(self.nodecount, type = nodetype, openpaths = openpath, fromNode = last, fromPath = fromPath, position = dict(self.pos))
             
@@ -282,6 +284,11 @@ class TestClient(BaseRobotClient):
             self.nodecount += 1
         else :
             self.lastnode = currentNode
+            if(nodetype == self.CROSSROAD) :
+                if(not(self.crossroadlist)) :
+                    self.crossroadlist.append(currentNode)
+                elif(self.crossroadlist[-1] != currentNode) :
+                    self.crossroadlist.append(currentNode)
         self.steps = 0
     
         return nodetype
@@ -301,6 +308,8 @@ class TestClient(BaseRobotClient):
             thenode = tmp
         #list = self.getWayToNode(self.crossroadlist[-1])
         list = self.getWayToNode(thenode)
+        print list 
+        a = raw_input()
         self.lastnode = list[-1]
         return list
     
@@ -367,9 +376,12 @@ class TestClient(BaseRobotClient):
     
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         
+        if(len(self.commandList) > 10) :
+            a = raw_input()
+        
         currentType = None
         #print sensor_data, bumper
-        self.printSensorData(sensor_data, bumper, compass, teleported)
+        #self.printSensorData(sensor_data, bumper, compass, teleported)
         #set own sensor data
         if sensor_data != None :
             self.setSensorData(sensor_data)
@@ -403,6 +415,8 @@ class TestClient(BaseRobotClient):
                         return self.moveForward()
                 if(compass <= 7.0 and compass >= 5.0) :
                     if(((self.orientation - 1) & 3) in open and ((self.orientation - 1) & 3) != fr) :
+                        #better!!!
+                        #return self.commandList = ['Left', 'Forward']
                         return self.turnLeft()
                 if(compass >= 1.0 and compass <= 3.0) :
                     if(((self.orientation + 1) & 3) in open and ((self.orientation + 1) & 3) != fr) :
@@ -412,8 +426,15 @@ class TestClient(BaseRobotClient):
                     return self.moveForward()
             
             if(len(open) <= 1) :
-                self.crossroadlist.pop()
-                return self.returnToLastCrossroad()
+                print "Crossroad List before: ", self.crossroadlist
+                last = self.crossroadlist.pop()
+                print "Crossroad List after: ", self.crossroadlist
+                #a = raw_input()
+                temp = self.returnToLastCrossroad()
+                print temp
+                #a = raw_input()
+                return temp
+                #return self.returnToLastCrossroad()
  
 
             if(((self.orientation - 1) & 3) in open and ((self.orientation - 1) & 3) != fr) :
@@ -450,8 +471,13 @@ class TestClient(BaseRobotClient):
                     dir = i
             if((self.orientation + 1) & 3 == dir) :
                 return self.turnRight()
-            else :
+            elif((self.orientation - 1) & 3 == dir) :
                 return self.turnLeft()
+            elif(self.orientation == dir) :
+                self.moveNextStep = False
+                return self.moveForward()
+            else :
+                return self.turnRight()
         #STRAIGHT Handling   
         else :
             self.moveNextStep = False
