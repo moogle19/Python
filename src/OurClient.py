@@ -65,10 +65,26 @@ class TestClient(BaseRobotClient):
         self.commandList = []
         
         
-    #TODO: relative to graph (2 steps back)
     def bombDrop(self):
+    
         print "DROPPING BOMB!"
-        commands = ['Right', 'Forward', 'DropBomb', 'Forward', 'Right', 'Right', 'Forward', 'Forward', 'Sense']
+        print self.steps
+        print self.Graph.node[self.lastnode]
+        commands = ['Right','Forward','DropBomb']
+        if (self.steps < 2):
+            availablePaths = self.Graph.node[self.lastnode]['openpaths']
+            dirToGo = 0
+            if(availablePaths[0] == self.orientation):
+                dirToGo = availablePaths[1]
+            else:
+                dirToGo = availablePaths[0]
+            if((self.orientation+1)&3 == dirToGo):
+                commands.extend(['Left','Forward','Right','Right','Forward','Right','Forward','Sense'])
+            else:
+                commands.extend(['Right','Forward','Right','Right','Forward','Left','Forward','Sense'])
+        #If enough Space available:
+        else: 
+            commands.extend(['Forward', 'Right', 'Right', 'Forward', 'Forward', 'Sense'])
         commands.reverse()
         self.commandList = commands
         
@@ -81,15 +97,13 @@ class TestClient(BaseRobotClient):
     def turnRight(self):
         self.orientation += 1
         self.sensor['battery'] -= 1
-        if(self.orientation > 3) :
-            self.orientation = 0
+        self.orientation &= 3
         return Command.RightTurn
     
     def turnLeft(self):
         self.orientation -= 1
         self.sensor['battery'] -= 1
-        if(self.orientation < 0) :
-            self.orientation = 3
+        self.orientation &= 3
         return Command.LeftTurn
     
     def moveForward(self):
@@ -187,10 +201,8 @@ class TestClient(BaseRobotClient):
         
         
         #assumption: the path we are coming from must be free
-        if(self.orientation + 2 <= 3) :
-            openpath.append(self.orientation + 2)
-        else :
-            openpath.append(self.orientation - 2)
+        # assumption: the path we are coming from must be free
+        openpath.append((self.orientation + 2) & 3)
         
         
         '''get open paths from this node with relative orientation''' 
@@ -205,33 +217,20 @@ class TestClient(BaseRobotClient):
         #get open paths for crossroads        
         elif(pathcount >= 3) :
             nodetype = self.CROSSROAD
-            #front is our current orientation
+            # front is our current orientation
             if(self.sensor['front'] == 0) :
                 openpath.append(self.orientation)
             if(self.sensor['left'] == 0) :
-                if(self.orientation - 1 < 0) :
-                    openpath.append(3)
-                else :
-                    openpath.append(self.orientation - 1)
+                openpath.append((self.orientation - 1) & 3)
             if(self.sensor['right'] == 0) :
-                if(self.orientation + 1 > 3) :
-                    openpath.append(0)
-                else :
-                    openpath.append(self.orientation + 1)  
-        
-        #get open paths for turns
+                openpath.append((self.orientation + 1) & 3)
+        # get open paths for turns
         elif(pathcount == 2) :
             nodetype = self.TURN
             if(self.sensor['left'] == 0 and self.sensor['right'] != 0 and self.sensor['front'] != 0) :
-                if(self.orientation - 1 < 0) :
-                    openpath.append(3)
-                else :
-                    openpath.append(self.orientation - 1)
+                openpath.append((self.orientation - 1) & 3)
             elif(self.sensor['right'] == 0 and self.sensor['left'] != 0 and self.sensor['front'] != 0) :
-                if(self.orientation + 1 > 3) :
-                    openpath.append(0)
-                else :
-                    openpath.append(self.orientation + 1)
+                openpath.append((self.orientation + 1) & 3)
             else :
                 return None
              
