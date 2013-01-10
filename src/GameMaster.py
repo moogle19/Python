@@ -47,7 +47,7 @@ class GameMaster(object):
     def __init__(self):
         self.robot_clients = {}
         self.robot_states = {}
-        self.maze = Maze('../data/maze2.pgm')
+        self.maze = Maze('../data/maze1.pgm')
         # don't use: self.visualizer = GameVisualizerImage(self.maze)
         self.visualizer = GameVisualizer(self.maze)
         #self.visualizer = GameVisualizerColor(self.maze)
@@ -116,7 +116,7 @@ class GameMaster(object):
 
                 self.robot_states[name].bumper = False
                 self.robot_states[name].teleported = False
-                self.robot_states[name].battery = 100
+#                self.robot_states[name].battery = 100
                 if command == Command.RightTurn:
                     if self.robot_states[name].battery > 0:
                         self.robot_states[name].battery -= 1
