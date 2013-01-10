@@ -72,9 +72,11 @@ class TestClient(BaseRobotClient):
         print self.steps
         print self.Graph.node[self.lastnode]
         commands = ['Right','Forward','DropBomb']
+        print "Steps: ", self.steps
         if (self.steps < 2):
             availablePaths = self.Graph.node[self.lastnode]['openpaths']
             dirToGo = 0
+            #if(not(((self.orientation +2) & 3) in availablePaths)) :
             if(availablePaths[0] == self.orientation):
                 dirToGo = availablePaths[1]
             else:
@@ -196,6 +198,8 @@ class TestClient(BaseRobotClient):
             pathcount += 1
         if(self.isFreeBack()) :
             pathcount += 1
+            
+        print "PATHCOUNT", pathcount
                 
         # orientation is relative to the start position of the robot but will be consistent in our program
         #        UP
@@ -212,9 +216,11 @@ class TestClient(BaseRobotClient):
         #get open paths from this node with relative orientation
         #the only open path for a Deadend is the pass we are coming from
         if(pathcount <= 1) :
-            if(not((compass == 0.0) and not(self.isFreeFront()) and not(self.isFreeRight()) and not(self.isFreeLeft()) and self.bombsDropped < 3) or self.isPortal()) :
+            if((compass == 0.0) and (not(self.isFreeFront()) and not(self.isFreeRight()) and not(self.isFreeLeft())) and (self.bombsDropped < 3) and not(self.isPortal())) :
+                print "NICHT HINZUFÜGEN"
                 return self.DEADEND
             else :
+                print "HINZUFÜGEN"
                 nodetype = self.DEADEND
             #set direction to go back
             
@@ -379,11 +385,11 @@ class TestClient(BaseRobotClient):
             return Command.Sense
     
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
+        print "STEPS: ", self.steps
         #if(len(self.commandList) > 10) :
-        #    a = raw_input()
         currentType = None
         #print sensor_data, bumper
-        #self.printSensorData(sensor_data, bumper, compass, teleported)
+        self.printSensorData(sensor_data, bumper, compass, teleported)
         #set own sensor data
         if sensor_data != None :
             self.setSensorData(sensor_data)
@@ -399,6 +405,7 @@ class TestClient(BaseRobotClient):
         
         if self.returnToNode :
             if(bumper) :
+                print "BUMPER"
                 self.commandList.append('Forward')
                 for _ in range(10) :
                     self.commandList.append('Stay')
@@ -407,6 +414,7 @@ class TestClient(BaseRobotClient):
 
         if self.commandList :
             if(bumper) :
+                print "BUMPER"
                 self.commandList.append('Forward')
                 for _ in range(10) :
                     self.commandList.append('Stay')

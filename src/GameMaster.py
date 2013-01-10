@@ -12,7 +12,6 @@ from Maze import *
 from BaseRobotClient import *
 #from GameVisualizerMatplotlib import GameVisualizerMatplotlib as GameVisualizer
 from GameVisualizerRawTerminal import GameVisualizerRawTerminal as GameVisualizer
-#from GameVisualizerColorTerminal import GameVisualizerColorTerminal as GameVisualizerColor
 #from GameVisualizerColorTerminal import GameVisualizerColorTerminal
 #from GameVisualizerImage import GameVisualizerImage
 
@@ -47,13 +46,13 @@ class GameMaster(object):
     def __init__(self):
         self.robot_clients = {}
         self.robot_states = {}
-        self.maze = Maze('../data/maze1.pgm')
+        self.maze = Maze('../data/maze2.pgm')
         # don't use: self.visualizer = GameVisualizerImage(self.maze)
         self.visualizer = GameVisualizer(self.maze)
-        #self.visualizer = GameVisualizerColor(self.maze)
         #self.visualizer = GameVisualizerRawTerminal(self.maze)
 
     def addClient(self, clientName):
+        
         print clientName
         module = __import__(clientName)
         if clientName in self.robot_clients.keys():
@@ -91,11 +90,8 @@ class GameMaster(object):
         self.maze.updateRobotStates(self.robot_states)
         while i < 100000 and not self.gameFinished(): #i < 10: #
             i += 1
-            #if(i > 3000) : 
-            #    a = raw_input()
-            self.visualizer.showState()
-            a = raw_input()
-            #sleep(0.02)
+            #sleep(0.05)
+            #self.visualizer.showState()
             #a = raw_input()
             print "round",i
             for name, robot in self.robot_clients.items():
@@ -107,17 +103,15 @@ class GameMaster(object):
                     sensor_data["bombs"] = self.robot_states[name].bombs
                     self.robot_states[name].sense = False
                 compass = self.getCompass(self.robot_states[name])
-                #try:
-                command = robot.getNextCommand(sensor_data, self.robot_states[name].bumper, compass,self.robot_states[name].teleported)
-                '''commentend out to see the error message'''
-                #except:
-                    #print "Error in robot",name,"continue" 
+                try:
+                    command = robot.getNextCommand(sensor_data, self.robot_states[name].bumper, compass,self.robot_states[name].teleported)
+                except:
+                    print "Error in robot",name,"continue" 
                 print name, "command:", Command.names[command]
                 print "battery: ", self.robot_states[name].battery
 
                 self.robot_states[name].bumper = False
                 self.robot_states[name].teleported = False
-#                self.robot_states[name].battery = 100
                 if command == Command.RightTurn:
                     if self.robot_states[name].battery > 0:
                         self.robot_states[name].battery -= 1
@@ -170,9 +164,10 @@ if __name__ == "__main__":
     
     #for name in sys.argv:
     #    master.addClient(name)
-    master.addClient("TestClient")
-    master.addClient("TestClient")
+    #master.addClient("TestClient")
     master.addClient("OurClient")
     #master.addClient("TestClient")
     master.initGame()    
     master.startGame()
+    import cProfile
+    cProfile.run("master.startGame()")
