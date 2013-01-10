@@ -188,9 +188,14 @@ class TestClient(BaseRobotClient):
         openpath = [] #list for directions which are open
                 
         #count valid/open paths
-        for x in self.sensorStrings :
-            if(sensor_data[x] == 0) :
-                pathcount += 1
+        if(self.isFreeFront()) :
+            pathcount += 1
+        if(self.isFreeLeft()) :
+            pathcount += 1
+        if(self.isFreeRight()) :
+            pathcount += 1
+        if(self.isFreeBack()) :
+            pathcount += 1
                 
         # orientation is relative to the start position of the robot but will be consistent in our program
         #        UP
@@ -207,7 +212,7 @@ class TestClient(BaseRobotClient):
         #get open paths from this node with relative orientation
         #the only open path for a Deadend is the pass we are coming from
         if(pathcount <= 1) :
-            if((compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0) and (self.bombsDropped < 3)) :
+            if(not((compass == 0.0) and not(self.isFreeFront()) and not(self.isFreeRight()) and not(self.isFreeLeft()) and self.bombsDropped < 3) or self.isPortal()) :
                 return self.DEADEND
             else :
                 nodetype = self.DEADEND
@@ -216,19 +221,19 @@ class TestClient(BaseRobotClient):
         #get open paths for crossroads        
         elif(pathcount >= 3) :
             nodetype = self.CROSSROAD
-            #front is our current orientation
-            if(self.sensor['front'] == 0) :
+            # front is our current orientation
+            if(self.isFreeFront()) :
                 openpath.append(self.orientation)
-            if(self.sensor['left'] == 0) :
+            if(self.isFreeLeft()) :
                 openpath.append((self.orientation - 1) & 3)
-            if(self.sensor['right'] == 0) :
+            if(self.isFreeRight()) :
                 openpath.append((self.orientation + 1) & 3)
         #get open paths for turns
         elif(pathcount == 2) :
             nodetype = self.TURN
-            if(self.sensor['left'] == 0 and self.sensor['right'] != 0 and self.sensor['front'] != 0) :
+            if(self.isFreeLeft() and not(self.isFreeRight()) and not(self.isFreeFront())) :
                 openpath.append((self.orientation - 1) & 3)
-            elif(self.sensor['right'] == 0 and self.sensor['left'] != 0 and self.sensor['front'] != 0) :
+            elif(self.isFreeRight() and not(self.isFreeLeft()) and not(self.isFreeFront())) :
                 openpath.append((self.orientation + 1) & 3)
             else :
                 return None
@@ -441,7 +446,7 @@ class TestClient(BaseRobotClient):
         
         #DEADEND Handling
         elif(currentType == self.DEADEND) :
-            if (compass == 0.0) and (self.sensor['front'] != 0) and (self.sensor['right'] != 0) and (self.sensor['left'] != 0) and (self.bombsDropped < 3):
+            if (compass == 0.0) and (not(self.isFreeFront()) and not(self.isFreeRight()) and not(self.isFreeLeft())) and (self.bombsDropped < 3) and not(self.isPortal()) :
                     return self.bombDrop()
             elif (self.crossroadcount) :
                 return self.returnToLastCrossroad()
@@ -450,7 +455,7 @@ class TestClient(BaseRobotClient):
                 #if self.sensor['battery'] < len(self.commandList) :
                 #    self.commandList.append('Stay')
                 #return self.doCommand(self.commandList.pop())
-            elif (self.sensor['front'] == 0) :
+            elif (self.isFreeFront()) :
                 self.moveNextStep = False
                 return self.moveForward()
             else :
@@ -476,9 +481,35 @@ class TestClient(BaseRobotClient):
         #STRAIGHT Handling   
         else :
             self.moveNextStep = False
-            if(self.sensor['front'] == 0) :
+            if(self.isFreeFront()) :
                 return self.moveForward()
             else :
                 return self.turnRight()
         print compass
+        
+    #free: if empty space(0) or energy station(128)
+    def isFreeFront(self):
+        if ((self.sensor['front'] == 0) or (self.sensor['front'] == 128)):
+            return True
+        return False
+        
+    def isFreeRight(self):
+        if ((self.sensor['right'] == 0) or (self.sensor['right'] == 128)):
+            return True
+        return False
+        
+    def isFreeLeft(self):
+        if ((self.sensor['left'] == 0) or (self.sensor['left'] == 128)):
+            return True
+        return False
+        
+    def isFreeBack(self):
+        if ((self.sensor['back'] == 0) or (self.sensor['back'] == 128)):
+            return True
+        return False
+    
+    def isPortal(self):
+        if(self.sensor['front'] == 129) :
+            return True
+        return False
      
