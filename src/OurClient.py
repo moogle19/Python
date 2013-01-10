@@ -69,10 +69,7 @@ class TestClient(BaseRobotClient):
     def bombDrop(self):
     
         print "DROPPING BOMB!"
-        print self.steps
-        print self.Graph.node[self.lastnode]
         commands = ['Right','Forward','DropBomb']
-        print "Steps: ", self.steps
         if (self.steps < 2):
             availablePaths = self.Graph.node[self.lastnode]['openpaths']
             dirToGo = 0
@@ -199,7 +196,6 @@ class TestClient(BaseRobotClient):
         if(self.isFreeBack()) :
             pathcount += 1
             
-        print "PATHCOUNT", pathcount
                 
         # orientation is relative to the start position of the robot but will be consistent in our program
         #        UP
@@ -217,10 +213,8 @@ class TestClient(BaseRobotClient):
         #the only open path for a Deadend is the pass we are coming from
         if(pathcount <= 1) :
             if((compass == 0.0) and (not(self.isFreeFront()) and not(self.isFreeRight()) and not(self.isFreeLeft())) and (self.bombsDropped < 3) and not(self.isPortal())) :
-                print "NICHT HINZUFÜGEN"
                 return self.DEADEND
             else :
-                print "HINZUFÜGEN"
                 nodetype = self.DEADEND
             #set direction to go back
             
@@ -327,7 +321,6 @@ class TestClient(BaseRobotClient):
     def pathToMoves(self, p) :
         path = list(p)
         moveList = []
-        print "PATHLIST: ", path
         currentNode = path.pop()
         while(len(path) > 0) :
             targetNode = path.pop()
@@ -385,19 +378,15 @@ class TestClient(BaseRobotClient):
             return Command.Sense
     
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
-        print "STEPS: ", self.steps
-        #if(len(self.commandList) > 10) :
         currentType = None
         #print sensor_data, bumper
-        self.printSensorData(sensor_data, bumper, compass, teleported)
+        #self.printSensorData(sensor_data, bumper, compass, teleported)
         #set own sensor data
         if sensor_data != None :
             self.setSensorData(sensor_data)
             currentType = self.addNode(sensor_data, compass)
             if(self.sensor['front'] == 192) :
-                print "WON!!!"
-                while(1) :
-                    1
+                return self.moveForward()
 
         #handle staying for battery recharging
         if (self.stayNextStep == 1) or (self.sensor['battery'] <= 15 and (not(self.isFreeFront()) and not(self.isFreeBack()))) or (self.moveNextStep == False)  :
@@ -405,7 +394,6 @@ class TestClient(BaseRobotClient):
         
         if self.returnToNode :
             if(bumper) :
-                print "BUMPER"
                 self.commandList.append('Forward')
                 for _ in range(10) :
                     self.commandList.append('Stay')
@@ -415,7 +403,6 @@ class TestClient(BaseRobotClient):
         if self.commandList :
             if(bumper) :
                 print "BUMPER"
-                self.commandList.append('Forward')
                 for _ in range(10) :
                     self.commandList.append('Stay')
             return self.doCommand(self.commandList.pop())
