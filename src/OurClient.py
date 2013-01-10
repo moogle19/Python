@@ -379,10 +379,8 @@ class TestClient(BaseRobotClient):
             return Command.Sense
     
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
- 
         #if(len(self.commandList) > 10) :
         #    a = raw_input()
-            
         currentType = None
         #print sensor_data, bumper
         #self.printSensorData(sensor_data, bumper, compass, teleported)
@@ -394,16 +392,24 @@ class TestClient(BaseRobotClient):
                 print "WON!!!"
                 while(1) :
                     1
-        
 
         #handle staying for battery recharging
-        if (self.stayNextStep == 1) or (self.sensor['battery'] <= 15 and (self.sensor['front'] != 0 and self.sensor['back'] != 0)) or (self.moveNextStep == False)  :
+        if (self.stayNextStep == 1) or (self.sensor['battery'] <= 15 and (not(self.isFreeFront()) and not(self.isFreeBack()))) or (self.moveNextStep == False)  :
             return self.batteryHandler();
         
         if self.returnToNode :
+            if(bumper) :
+                self.commandList.append('Forward')
+                for _ in range(10) :
+                    self.commandList.append('Stay')
+                    
             return self.returnToLastCrossroad()
 
         if self.commandList :
+            if(bumper) :
+                self.commandList.append('Forward')
+                for _ in range(10) :
+                    self.commandList.append('Stay')
             return self.doCommand(self.commandList.pop())
 
             
@@ -458,8 +464,18 @@ class TestClient(BaseRobotClient):
             elif (self.isFreeFront()) :
                 self.moveNextStep = False
                 return self.moveForward()
+            elif(self.isFreeLeft()) :
+                self.commandList.append('Sense')
+                self.commandList.append('Forward')
+                return self.turnLeft()
+            elif(self.isFreeRight()) :
+                self.commandList.append('Sense')
+                self.commandList.append('Forward')
+                return self.turnRight()
             else :
-                self.moveNextStep = False
+                self.commandList.append('Sense')
+                self.commandList.append('Forward')
+                self.commandList.append('Right')
                 return self.turnRight()
             
         #TURN Handling    
@@ -510,6 +526,11 @@ class TestClient(BaseRobotClient):
     
     def isPortal(self):
         if(self.sensor['front'] == 129) :
+            return True
+        return False
+    
+    def isEnergy(self):
+        if(self.sensor['front'] == 128):
             return True
         return False
      

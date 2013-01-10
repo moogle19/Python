@@ -12,7 +12,7 @@ from Maze import *
 from BaseRobotClient import *
 #from GameVisualizerMatplotlib import GameVisualizerMatplotlib as GameVisualizer
 from GameVisualizerRawTerminal import GameVisualizerRawTerminal as GameVisualizer
-from GameVisualizerColorTerminal import GameVisualizerColorTerminal as GameVisualizerColor
+#from GameVisualizerColorTerminal import GameVisualizerColorTerminal as GameVisualizerColor
 #from GameVisualizerColorTerminal import GameVisualizerColorTerminal
 #from GameVisualizerImage import GameVisualizerImage
 
@@ -93,7 +93,8 @@ class GameMaster(object):
             i += 1
             #if(i > 3000) : 
             #    a = raw_input()
-            #self.visualizer.showState()
+            self.visualizer.showState()
+            a = raw_input()
             #sleep(0.02)
             #a = raw_input()
             print "round",i
