@@ -406,6 +406,7 @@ class TestClient(BaseRobotClient):
                         return self.turnLeft()
                 if(compass >= 1.0 and compass <= 3.0) :
                     if(((self.orientation + 1) & 3) in open and not(((self.orientation + 1) & 3) in visited) and ((self.orientation + 1) & 3) != fr) :
+                        self.Graph.node[self.lastnode]['visitedpaths'].append((self.orientation + 1) & 3)
                         self.commandList.append('Sense')
                         self.commandList.append('Forward')
                         return self.turnRight()
@@ -421,10 +422,12 @@ class TestClient(BaseRobotClient):
  
 
             if(((self.orientation - 1) & 3) in open and not(((self.orientation - 1) & 3) in visited) and ((self.orientation - 1) & 3) != fr) :
+                self.Graph.node[self.lastnode]['visitedpaths'].append((self.orientation - 1) & 3)
                 self.commandList.append('Sense')
                 self.commandList.append('Forward')
                 return self.turnLeft()
             if(((self.orientation + 1) & 3) in open and not(((self.orientation + 1) & 3) in visited) and ((self.orientation + 1) & 3) != fr) :
+                self.Graph.node[self.lastnode]['visitedpaths'].append((self.orientation + 1) & 3)
                 self.commandList.append('Sense')
                 self.commandList.append('Forward')
                 return self.turnRight()
