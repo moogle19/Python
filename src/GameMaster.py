@@ -6,6 +6,8 @@ Created on Wed Oct 24 13:57:26 2012
 """
 import sys
 import math
+import cProfile
+
 from time import sleep
 
 from Maze import *
@@ -164,10 +166,10 @@ if __name__ == "__main__":
     
     #for name in sys.argv:
     #    master.addClient(name)
-    #master.addClient("TestClient")
     master.addClient("OurClient")
-    #master.addClient("TestClient")
+    master.addClient("OurClient")
+    master.addClient("OurClient")
+    #master.addClient("OurClient")
     master.initGame()    
     master.startGame()
-    import cProfile
     cProfile.run("master.startGame()")

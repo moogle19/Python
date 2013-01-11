@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Nov 7 10:52:51 2012
-
-@author: Kevin Seidel
-@author Valentin Bruder
-"""
 from BaseRobotClient import *
 from time import sleep
 
@@ -262,7 +255,8 @@ class TestClient(BaseRobotClient):
                     #n[1]['openpaths'].remove((self.orientation + 2) % 4)
                     #if(len(n[1]['openpaths']) <= 1) :
         if (not(nodeAlreadyAdded)) :
-            self.crossroadcount += 1
+            if(nodetype == self.CROSSROAD) :
+                self.crossroadcount += 1
             self.Graph.add_node(self.nodecount, type = nodetype, openpaths = openpath, visitedpaths = list(), fromNode = last, fromPath = fromPath, position = dict(self.pos))
             
         if(self.nodecount > 1) :
@@ -407,9 +401,8 @@ class TestClient(BaseRobotClient):
                     self.commandList.append('Stay')
             return self.doCommand(self.commandList.pop())
 
-            
+        print "CROSSROADCOUNT: ", self.crossroadcount 
         if(currentType == self.CROSSROAD) :
-            self.moveNextStep = False
             open = self.Graph.node[self.lastnode]['openpaths']
             visited = self.Graph.node[self.lastnode]['visitedpaths']
             fr = self.Graph.node[self.lastnode]['fromPath']
@@ -419,17 +412,21 @@ class TestClient(BaseRobotClient):
                 if(compass <= 1.0 or compass == 7.0) :
                     if(self.orientation in open and not(self.orientation in visited) and self.orientation != fr) :
                         self.Graph.node[self.lastnode]['visitedpaths'].append(self.orientation)
+                        self.moveNextStep = False
                         return self.moveForward()
                 if(compass <= 7.0 and compass >= 5.0) :
                     if(((self.orientation - 1) & 3) in open and not(((self.orientation - 1) & 3) in visited) and ((self.orientation - 1) & 3) != fr) :
-                        #better!!!
-                        #return self.commandList = ['Left', 'Forward']
+                        self.commandList.append('Sense')
+                        self.commandList.append('Forward')
                         return self.turnLeft()
                 if(compass >= 1.0 and compass <= 3.0) :
                     if(((self.orientation + 1) & 3) in open and not(((self.orientation + 1) & 3) in visited) and ((self.orientation + 1) & 3) != fr) :
+                        self.commandList.append('Sense')
+                        self.commandList.append('Forward')
                         return self.turnRight()
                 if(self.orientation in open and not(self.orientation in visited) and self.orientation != fr) :
                     #self.Graph.node[self.lastnode]['openpaths'].remove(self.orientation)
+                    self.moveNextStep = False
                     self.Graph.node[self.lastnode]['visitedpaths'].append(self.orientation)
                     return self.moveForward()
             
@@ -439,8 +436,12 @@ class TestClient(BaseRobotClient):
  
 
             if(((self.orientation - 1) & 3) in open and not(((self.orientation - 1) & 3) in visited) and ((self.orientation - 1) & 3) != fr) :
+                self.commandList.append('Sense')
+                self.commandList.append('Forward')
                 return self.turnLeft()
             if(((self.orientation + 1) & 3) in open and not(((self.orientation + 1) & 3) in visited) and ((self.orientation + 1) & 3) != fr) :
+                self.commandList.append('Sense')
+                self.commandList.append('Forward')
                 return self.turnRight()
             return self.turnRight()
             
@@ -475,14 +476,18 @@ class TestClient(BaseRobotClient):
             
         #TURN Handling    
         elif(currentType == self.TURN) :
-            self.moveNextStep = False
+            print "TURN"
             dir = None
             for i in self.Graph.node[self.lastnode]['openpaths'] :
                 if(i != (self.orientation + 2) & 3) :
                     dir = i
             if((self.orientation + 1) & 3 == dir) :
+                self.commandList.append('Sense')
+                self.commandList.append('Forward')
                 return self.turnRight()
             elif((self.orientation - 1) & 3 == dir) :
+                self.commandList.append('Sense')
+                self.commandList.append('Forward')
                 return self.turnLeft()
             elif(self.orientation == dir) :
                 self.moveNextStep = False
@@ -491,9 +496,26 @@ class TestClient(BaseRobotClient):
                 return self.turnRight()
         #STRAIGHT Handling   
         else :
-            self.moveNextStep = False
+            if(self.steps == 0) :
+                if(self.isFreeFront() and compass <= 1.0 or compass == 7.0) :
+                    self.moveNextStep = False
+                    return self.moveForward()
+                if(self.isFreeRight() and compass >= 1.0 and compass <= 3.0) :
+                    self.commandList.append('Sense')
+                    self.commandList.append('Forward')
+                    return self.turnRight()
+                if(self.isFreeLeft() and compass <= 7.0 and compass >= 5.0) :
+                    self.commandList.append('Sense')
+                    self.commandList.append('Forward')
+                    return self.turnLeft()   
+                if(self.isFreeBack() and compass <= 5.0 or compass >= 3.0) :
+                    self.commandList.append('Sense')
+                    self.commandList.append('Forward')
+                    self.commandList.append('Right')
+                    return self.turnRight()  
             if(self.isFreeFront()) :
-                return self.moveForward()
+                self.moveNextStep = False
+                return self.moveForward()          
             else :
                 return self.turnRight()
         print compass
