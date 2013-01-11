@@ -48,7 +48,7 @@ class GameMaster(object):
     def __init__(self):
         self.robot_clients = {}
         self.robot_states = {}
-        self.maze = Maze('../data/maze1.pgm')
+        self.maze = Maze('../data/maze2.pgm')
         # don't use: self.visualizer = GameVisualizerImage(self.maze)
         self.visualizer = GameVisualizer(self.maze)
         #self.visualizer = GameVisualizerRawTerminal(self.maze)
@@ -94,7 +94,7 @@ class GameMaster(object):
             i += 1
             #sleep(0.05)
             self.visualizer.showState()
-            a = raw_input()
+            #a = raw_input()
             print "round",i
             for name, robot in self.robot_clients.items():
                 sensor_data = None
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     
     #for name in sys.argv:
     #    master.addClient(name)
-    #master.addClient("TestClient")
+    master.addClient("TestClient")
     master.addClient("OurClient")
     #master.addClient("OurClient")
     #master.addClient("OurClient")

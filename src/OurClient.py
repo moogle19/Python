@@ -145,13 +145,14 @@ class TestClient(BaseRobotClient):
         if (self.stayNextStep == 1):
             if (self.staytime <= 30) :
                 self.staytime += 1
+                #self.commandList.append('Stay')
                 return self.stay()           
             else :
                 self.stayNextStep = 0
                 self.staytime = 0
                 self.moveNextStep = True
                 return Command.Sense
-        elif self.sensor['battery'] <= 10 :
+        elif self.sensor['battery'] <= 20 :
             self.stayNextStep = 1
             return self.stay()
         else :
@@ -171,10 +172,13 @@ class TestClient(BaseRobotClient):
         if(not(self.commandList)) :
             self.returnToNode = False
             #self.moveNextStep = False
+        print "LAst Nodeself ", self.lastnode
+        print "CommandList ", self.commandList
         return self.doCommand(ret)
 
     
     def addNode(self, sensor_data, compass):
+        print "^^^^^^^^^^^^^^^^^^^^^^"
         pathcount = 0;
         openpath = [] #list for directions which are open
         
@@ -199,7 +203,7 @@ class TestClient(BaseRobotClient):
         
         #assumption: the path we are coming from must be free
         openpath.append((self.orientation + 2) & 3)
-
+        print "<<<<<>>>>>>>>>"
         #get open paths from this node with relative orientation
         #the only open path for a Deadend is the pass we are coming from
         if(pathcount <= 1) :
@@ -232,7 +236,8 @@ class TestClient(BaseRobotClient):
         #if it is not a node return None, return is only there to stop the method. 
         else :
             return None     
-        
+        print "NODETYPE :", nodetype
+
         #if it is a node add it
         if(self.nodecount <= 1) :
             last = None
@@ -262,7 +267,7 @@ class TestClient(BaseRobotClient):
                 edgeAlreadyAdded = False
                 for e in self.Graph.edges() :
                     if (currentNode in e and self.lastnode in e) :
-                        edgeAlreadyAdded = True 
+                        edgeAlreadyAdded = True
                 if (not(edgeAlreadyAdded)) :
                     self.Graph.add_edge(self.lastnode, currentNode, length = self.steps, dir = self.orientation, visited = False)
         
@@ -272,16 +277,19 @@ class TestClient(BaseRobotClient):
             self.nodecount += 1
         else :
             self.lastnode = currentNode
+            crossroadthere = False
+
             if(nodetype == self.DEADEND) :
-                crossroadthere = False
                 print "Graph: ", self.Graph.nodes(data = True)
                 print "NODETYPE: ", nodetype
 
                 for x in self.Graph.node.itervalues() :
+                    print x
                     if(x['type'] == self.CROSSROAD) :
                         crossroadthere = True
-            if(not(crossroadthere)) :
-                self.getToPortal = True
+                print "CRTHERE : ", crossroadthere
+                if(not(crossroadthere)) :
+                    self.getToPortal = True
             if(nodetype == self.CROSSROAD) :
                 if(openpath.sort() != self.Graph.node[currentNode]['openpaths'].sort()) :
                     self.Graph.node[currentNode]['openpaths'] = openpath
@@ -304,11 +312,13 @@ class TestClient(BaseRobotClient):
     
     #returns nodelist with the shortest path to the targetnode     
     def getWayToNode(self, targetNode):
+        print "LASTNODE DIJKSTRA: ", self.lastnode
         return nx.dijkstra_path(self.Graph, self.lastnode, targetNode, 'length')
     
     #returns nodelist with the shortest path to the last crossroad
     def getBackToLastCrossRoad(self) :
         thenode = self.Graph.node[self.lastnode]['fromNode']
+        print "LASTNODE CR: ", self.lastnode
         while True :
             if(self.Graph.number_of_nodes() <= 1) :
                 print "YOU ARE STUCK! Only 0 or 1 nodes in nodelist. You can not got back to last Crossroad because there is no last Crossroad. Blow the shit up or die!"
@@ -338,6 +348,7 @@ class TestClient(BaseRobotClient):
             distance = self.Graph.edge[currentNode][targetNode]['length']
             moveList.append([direction, distance])
             currentNode = targetNode
+        print "MOVELIST: ", moveList
         return moveList
     
     
@@ -388,8 +399,11 @@ class TestClient(BaseRobotClient):
             return self.reset()
     
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
+        print "STEPS: ", self.steps
+
         currentType = None
-        self.printSensorData(sensor_data, bumper, compass, teleported)
+        print "COMMANDLIST: ", self.commandList
+        #self.printSensorData(sensor_data, bumper, compass, teleported)
         #set own sensor data
         
         if sensor_data != None :
@@ -400,11 +414,13 @@ class TestClient(BaseRobotClient):
                 return self.moveForward()
 
         #handle staying for battery recharging
-        if (self.stayNextStep == 1) or (self.sensor['battery'] <= 15 and (not(self.isFreeFront()) and not(self.isFreeBack()))) or (self.moveNextStep == False)  :
+        if (self.stayNextStep == 1) or (self.sensor['battery'] <= 15  or (self.moveNextStep == False))  :
             return self.batteryHandler();
         
         if self.returnToNode :
             if(bumper) :
+                print "BUMPER 2......"
+                a = raw_input()
                 self.commandList.append('Forward')
                 for _ in range(10) :
                     self.commandList.append('Stay')
@@ -417,15 +433,27 @@ class TestClient(BaseRobotClient):
                     self.pos['x'] += 1
                 elif(self.orientation == 3):
                     self.pos['y'] += 1
+                
             return self.returnToLastCrossroad()
 
         if self.commandList :
             if(bumper) :
+                a = raw_input()
                 print "BUMPER"
                 self.commandList.append('Forward')
                 for _ in range(10) :
                     self.commandList.append('Stay')
+                    a = raw_input()
                 self.steps -= 1
+                if(self.orientation == 0):
+                    self.pos['x'] -= 1
+                elif(self.orientation == 1):
+                    self.pos['y'] -= 1
+                elif(self.orientation == 2):
+                    self.pos['x'] += 1
+                elif(self.orientation == 3):
+                    self.pos['y'] += 1
+                
                 
                 
             return self.doCommand(self.commandList.pop())
@@ -434,6 +462,7 @@ class TestClient(BaseRobotClient):
             return self.getBackToLastPortal()
 
         print "CROSSROADCOUNT: ", self.crossroadcount 
+        print "CURRENT TYPE: ", currentType
         if(currentType == self.CROSSROAD) :
             open = self.Graph.node[self.lastnode]['openpaths']
             visited = self.Graph.node[self.lastnode]['visitedpaths']
@@ -441,6 +470,7 @@ class TestClient(BaseRobotClient):
             
                         
             if(len(open) > len(visited) + 1) :
+                print "JAKFJKADJKFHJDHJKHDFJKHDFJKHFDJKDHFJKFHJKDFHJK"
                 if(compass <= 1.0 or compass == 7.0) :
                     if(self.orientation in open and not(self.orientation in visited) and self.orientation != fr) :
                         self.Graph.node[self.lastnode]['visitedpaths'].append(self.orientation)
@@ -450,12 +480,22 @@ class TestClient(BaseRobotClient):
                     if(((self.orientation - 1) & 3) in open and not(((self.orientation - 1) & 3) in visited) and ((self.orientation - 1) & 3) != fr) :
                         self.commandList.append('Sense')
                         self.commandList.append('Forward')
+                        #self.moveNextStep = False
                         return self.turnLeft()
                 if(compass >= 1.0 and compass <= 3.0) :
                     if(((self.orientation + 1) & 3) in open and not(((self.orientation + 1) & 3) in visited) and ((self.orientation + 1) & 3) != fr) :
                         self.Graph.node[self.lastnode]['visitedpaths'].append((self.orientation + 1) & 3)
                         self.commandList.append('Sense')
+                        #self.moveNextStep = False
                         self.commandList.append('Forward')
+                        return self.turnRight()
+                if(compass >= 3.0 and compass <= 5.0) :
+                    if(((self.orientation + 2) & 3) in open and not(((self.orientation + 2) & 3) in visited) and ((self.orientation + 2) & 3) != fr) :
+                        self.Graph.node[self.lastnode]['visitedpaths'].append((self.orientation + 2) & 3)
+                        self.commandList.append('Sense')
+                        #self.moveNextStep = False
+                        self.commandList.append('Forward')
+                        self.commandList.append('Right')
                         return self.turnRight()
                 if(self.orientation in open and not(self.orientation in visited) and self.orientation != fr) :
                     #self.Graph.node[self.lastnode]['openpaths'].remove(self.orientation)
@@ -472,12 +512,22 @@ class TestClient(BaseRobotClient):
                 self.Graph.node[self.lastnode]['visitedpaths'].append((self.orientation - 1) & 3)
                 self.commandList.append('Sense')
                 self.commandList.append('Forward')
+                #self.moveNextStep = False
                 return self.turnLeft()
             if(((self.orientation + 1) & 3) in open and not(((self.orientation + 1) & 3) in visited) and ((self.orientation + 1) & 3) != fr) :
                 self.Graph.node[self.lastnode]['visitedpaths'].append((self.orientation + 1) & 3)
                 self.commandList.append('Sense')
+                #self.moveNextStep = False
                 self.commandList.append('Forward')
                 return self.turnRight()
+            if(((self.orientation + 2) & 3) in open and not(((self.orientation + 2) & 3) in visited) and ((self.orientation + 2) & 3) != fr) :
+                        self.Graph.node[self.lastnode]['visitedpaths'].append((self.orientation + 2) & 3)
+                        self.commandList.append('Sense')
+                        #self.moveNextStep = False
+                        self.commandList.append('Forward')
+                        self.commandList.append('Right')
+                        return self.turnRight()
+            print "JGKDKJGK"
             return self.turnRight()
             
         
@@ -485,6 +535,7 @@ class TestClient(BaseRobotClient):
         elif(currentType == self.DEADEND) :
             if(compass == 0.0) and (not(self.isFreeFront()) and not(self.isFreeRight()) and not(self.isFreeLeft())) and (self.bombsDropped < 3) and not(self.isPortal()) :
                     return self.bombDrop()
+                    #return self.returnToLastCrossroad()
             if(self.crossroadcount) :
                 return self.returnToLastCrossroad()
             if(self.isFreeFront()) :
@@ -515,22 +566,29 @@ class TestClient(BaseRobotClient):
                 if(i != (self.orientation + 2) & 3) :
                     dir = i
             if((self.orientation + 1) & 3 == dir) :
+                print "BLA"
                 self.commandList.append('Sense')
                 self.commandList.append('Forward')
                 return self.turnRight()
             elif((self.orientation - 1) & 3 == dir) :
+                print "BLA"
+
                 self.commandList.append('Sense')
                 self.commandList.append('Forward')
                 return self.turnLeft()
             elif(self.orientation == dir) :
+                print "BLA"
                 self.moveNextStep = False
                 return self.moveForward()
             else :
+                print "HERE"
                 return self.turnRight()
             
         #STRAIGHT Handling at beginning  
         else :
+            print "STRAIGHT HANDLING___________"
             if(self.steps == 0) :
+                print "BLABLA"
                 if(self.isFreeFront() and compass <= 1.0 or compass == 7.0) :
                     self.moveNextStep = False
                     return self.moveForward()
@@ -554,6 +612,7 @@ class TestClient(BaseRobotClient):
                 else :
                     return self.moveForward()          
             else :
+                print "JALLLO"
                 return self.turnRight()
         print compass
         
@@ -622,7 +681,7 @@ class TestClient(BaseRobotClient):
             self.Graph.add_node(self.nodecount, type = self.PORTAL, openpaths = portal, visitedpaths = list(), fromNode = last, fromPath = portal, position = dict(self.pos))
             self.lastPortal = self.nodecount
             if(self.nodecount == 1) :
-                self.lastnode == self.nodecount
+                self.lastnode = self.nodecount
             else :
                 self.Graph.add_edge(self.lastnode, self.nodecount, length = self.steps + 1, dir = self.orientation, visited = False)
             self.nodecount += 1
