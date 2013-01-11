@@ -248,7 +248,6 @@ class TestClient(BaseRobotClient):
     def addNode(self, sensor_data, compass):
         pathcount = 0;
         openpath = [] #list for directions which are open
-           
         #count valid/open paths
         if(self.isFreeFront()) :
             pathcount += 1
@@ -377,7 +376,7 @@ class TestClient(BaseRobotClient):
             self.returnToNode = False
             #self.moveNextStep = False
         return self.doCommand(ret)
-    
+
     ##
     # @brief using dijkstra algorithm to get the fastest path back to specific node
     # @param self
@@ -495,7 +494,6 @@ class TestClient(BaseRobotClient):
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         currentType = None
         self.printSensorData(sensor_data, bumper, compass, teleported)
-        
         #Save current sensor data
         if sensor_data != None :
             self.setSensorData(sensor_data)

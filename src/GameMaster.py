@@ -6,13 +6,14 @@ Created on Wed Oct 24 13:57:26 2012
 """
 import sys
 import math
+import cProfile
+
 from time import sleep
 
 from Maze import *
 from BaseRobotClient import *
 #from GameVisualizerMatplotlib import GameVisualizerMatplotlib as GameVisualizer
 from GameVisualizerRawTerminal import GameVisualizerRawTerminal as GameVisualizer
-#from GameVisualizerColorTerminal import GameVisualizerColorTerminal as GameVisualizerColor
 #from GameVisualizerColorTerminal import GameVisualizerColorTerminal
 #from GameVisualizerImage import GameVisualizerImage
 
@@ -50,10 +51,10 @@ class GameMaster(object):
         self.maze = Maze('../data/maze1.pgm')
         # don't use: self.visualizer = GameVisualizerImage(self.maze)
         self.visualizer = GameVisualizer(self.maze)
-        #self.visualizer = GameVisualizerColor(self.maze)
         #self.visualizer = GameVisualizerRawTerminal(self.maze)
 
     def addClient(self, clientName):
+        
         print clientName
         module = __import__(clientName)
         if clientName in self.robot_clients.keys():
@@ -67,7 +68,6 @@ class GameMaster(object):
 
     def initGame(self):
         pass
-    
 
     def gameFinished(self):
         goal = self.maze.getGoal()
@@ -92,12 +92,9 @@ class GameMaster(object):
         self.maze.updateRobotStates(self.robot_states)
         while i < 100000 and not self.gameFinished(): #i < 10: #
             i += 1
-            #if(i > 3000) : 
-            #    a = raw_input()
+            #sleep(0.05)
             self.visualizer.showState()
             a = raw_input()
-            #sleep(0.02)
-            #a = raw_input()
             print "round",i
             for name, robot in self.robot_clients.items():
                 sensor_data = None
@@ -110,15 +107,13 @@ class GameMaster(object):
                 compass = self.getCompass(self.robot_states[name])
                 #try:
                 command = robot.getNextCommand(sensor_data, self.robot_states[name].bumper, compass,self.robot_states[name].teleported)
-                '''commentend out to see the error message'''
                 #except:
-                    #print "Error in robot",name,"continue" 
+                #    print "Error in robot",name,"continue" 
                 print name, "command:", Command.names[command]
                 print "battery: ", self.robot_states[name].battery
 
                 self.robot_states[name].bumper = False
                 self.robot_states[name].teleported = False
-#                self.robot_states[name].battery = 100
                 if command == Command.RightTurn:
                     if self.robot_states[name].battery > 0:
                         self.robot_states[name].battery -= 1
@@ -171,9 +166,10 @@ if __name__ == "__main__":
     
     #for name in sys.argv:
     #    master.addClient(name)
-    master.addClient("TestClient")
-    master.addClient("TestClient")
-    master.addClient("OurClient")
     #master.addClient("TestClient")
+    master.addClient("OurClient")
+    #master.addClient("OurClient")
+    #master.addClient("OurClient")
     master.initGame()    
     master.startGame()
+    cProfile.run("master.startGame()")
