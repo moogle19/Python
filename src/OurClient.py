@@ -11,8 +11,6 @@ class TestClient(BaseRobotClient):
     
     def __init__(self):
         super(TestClient , self).__init__()
-        #test teleporter  self.commands = [0,0,3, 3,0,3, 4]
-        #test sensor_data self.commands = [3,4,0]   
         
         self.sensor = {'right': 0, 'left': 0, 'front':0, 'back': 0, 'battery': 100}     
         self.sensorStrings = ['front', 'right', 'back', 'left']
@@ -40,12 +38,6 @@ class TestClient(BaseRobotClient):
         self.DEADEND = 1
         self.TURN = 2
         self.PORTAL = 3
-        self.STONE = 4
-        self.ENERGY = 5
-        
-        #EDGE DIRECTION IDENTIFIER 
-        self.VERT = 0
-        self.HORI = 1
         
         #ORIENTATION IDENTIFIER
         self.UP = 0
@@ -89,10 +81,11 @@ class TestClient(BaseRobotClient):
         return Command.DropBomb      
     
     def energyHandler(self):
-        staytime = int((100 - self.sensor['battery']) / 30 )
+        staytime = int((128 - self.sensor['battery']) / 30 )
         for x in range(0,staytime):
             self.commandList.append('Stay')
         self.commandList.append('Sense')
+        self.moveNextStep = True
         return self.moveForward()
             
     def turnRight(self):
@@ -144,7 +137,7 @@ class TestClient(BaseRobotClient):
         
     def batteryHandler(self):
         if (self.stayNextStep == 1):
-            if (self.staytime <= 50) :
+            if (self.staytime <= 30) :
                 self.staytime += 1
                 return self.stay()           
             else :
@@ -188,8 +181,7 @@ class TestClient(BaseRobotClient):
             pathcount += 1
         if(self.isFreeBack()) :
             pathcount += 1
-            
-                
+                           
         # orientation is relative to the start position of the robot but will be consistent in our program
         #        UP
         #        0
@@ -197,7 +189,6 @@ class TestClient(BaseRobotClient):
         #        2
         #       DOWN
         # because its a relative orientation, UP does not have to be the Up direction in the output, but that doesn't matter, it works!
-        
         
         #assumption: the path we are coming from must be free
         openpath.append((self.orientation + 2) & 3)
@@ -251,9 +242,6 @@ class TestClient(BaseRobotClient):
             if(n[1]['position'] == self.pos) :
                 nodeAlreadyAdded = True
                 currentNode = n[0]
-                #if((self.orientation + 2) % 4 in n[1]['openpaths'] and self.returnToNode) : 
-                    #n[1]['openpaths'].remove((self.orientation + 2) % 4)
-                    #if(len(n[1]['openpaths']) <= 1) :
         if (not(nodeAlreadyAdded)) :
             if(nodetype == self.CROSSROAD) :
                 self.crossroadcount += 1
@@ -325,8 +313,6 @@ class TestClient(BaseRobotClient):
         return moveList
     
     
-    #TODO: method which follows path back to last crossroad and set edge to visited
-    #TODO: Method to perform Commands
     '''
         returns list with commands in reverse order to handle it better with List.pop()
     '''
@@ -373,7 +359,6 @@ class TestClient(BaseRobotClient):
     
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         currentType = None
-        #print sensor_data, bumper
         #self.printSensorData(sensor_data, bumper, compass, teleported)
         #set own sensor data
         if sensor_data != None :
@@ -448,23 +433,21 @@ class TestClient(BaseRobotClient):
         
         #DEADEND Handling
         elif(currentType == self.DEADEND) :
-            if (compass == 0.0) and (not(self.isFreeFront()) and not(self.isFreeRight()) and not(self.isFreeLeft())) and (self.bombsDropped < 3) and not(self.isPortal()) :
+            if(compass == 0.0) and (not(self.isFreeFront()) and not(self.isFreeRight()) and not(self.isFreeLeft())) and (self.bombsDropped < 3) and not(self.isPortal()) :
                     return self.bombDrop()
-            elif (self.crossroadcount) :
+            if(self.crossroadcount) :
                 return self.returnToLastCrossroad()
-                #print "CommandList: ", self.commandList
-                #print self.doCommand(self.commandList.pop())
-                #if self.sensor['battery'] < len(self.commandList) :
-                #    self.commandList.append('Stay')
-                #return self.doCommand(self.commandList.pop())
-            elif (self.isFreeFront()) :
+            if(self.isFreeFront()) :
                 self.moveNextStep = False
-                return self.moveForward()
-            elif(self.isFreeLeft()) :
+                if (self.isEnergy()) :
+                    return self.energyHandler()
+                else :
+                    return self.moveForward()
+            if(self.isFreeLeft()) :
                 self.commandList.append('Sense')
                 self.commandList.append('Forward')
                 return self.turnLeft()
-            elif(self.isFreeRight()) :
+            if(self.isFreeRight()) :
                 self.commandList.append('Sense')
                 self.commandList.append('Forward')
                 return self.turnRight()
@@ -494,7 +477,8 @@ class TestClient(BaseRobotClient):
                 return self.moveForward()
             else :
                 return self.turnRight()
-        #STRAIGHT Handling   
+            
+        #STRAIGHT Handling at beginning  
         else :
             if(self.steps == 0) :
                 if(self.isFreeFront() and compass <= 1.0 or compass == 7.0) :
@@ -515,7 +499,10 @@ class TestClient(BaseRobotClient):
                     return self.turnRight()  
             if(self.isFreeFront()) :
                 self.moveNextStep = False
-                return self.moveForward()          
+                if (self.isEnergy()) :
+                    return self.energyHandler()
+                else :
+                    return self.moveForward()          
             else :
                 return self.turnRight()
         print compass
