@@ -105,10 +105,10 @@ class GameMaster(object):
                     sensor_data["bombs"] = self.robot_states[name].bombs
                     self.robot_states[name].sense = False
                 compass = self.getCompass(self.robot_states[name])
-                try:
-                    command = robot.getNextCommand(sensor_data, self.robot_states[name].bumper, compass,self.robot_states[name].teleported)
-                except:
-                    print "Error in robot",name,"continue" 
+                #try:
+                command = robot.getNextCommand(sensor_data, self.robot_states[name].bumper, compass,self.robot_states[name].teleported)
+                #except:
+                #    print "Error in robot",name,"continue" 
                 print name, "command:", Command.names[command]
                 print "battery: ", self.robot_states[name].battery
 
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     
     #for name in sys.argv:
     #    master.addClient(name)
-    master.addClient("TestClient")
+    #master.addClient("TestClient")
     master.addClient("OurClient")
     #master.addClient("OurClient")
     #master.addClient("OurClient")
