@@ -67,6 +67,7 @@ class GameMaster(object):
 
     def initGame(self):
         pass
+    
 
     def gameFinished(self):
         goal = self.maze.getGoal()
